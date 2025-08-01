@@ -25,6 +25,7 @@ public class Main extends Application {
             int x = 10;
             int y = x + 5;
             System.out.println(x + y);
+            label.setText("Welcome to Tetris");
             label.setText("Hello, " + input.getText() + "!");
         });
         StackPane.setAlignment(label, Pos.TOP_CENTER);
@@ -32,7 +33,7 @@ public class Main extends Application {
         StackPane.setAlignment(btn, Pos.BOTTOM_CENTER);
         Scene scene = new Scene(root, 400, 200);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("JavaFX Demo");
+        primaryStage.setTitle("Tetris");
         primaryStage.show();
     }
 }
