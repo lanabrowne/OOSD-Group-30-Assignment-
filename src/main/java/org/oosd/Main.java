@@ -22,10 +22,11 @@ public class Main extends Application {
         Button game = new Button("Play Game");
         Button conf = new Button("Configurations");
         Button exit = new Button("Exit");
+        Button random = new Button("random");
 
 
         StackPane root = new StackPane();
-        root.getChildren().addAll(label, btn, game, conf, exit);
+        root.getChildren().addAll(label, btn, game, conf, exit, random);
         btn.setOnAction(e -> {
             int x = 10;
             int y = x + 5;
