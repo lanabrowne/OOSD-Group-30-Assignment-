@@ -16,21 +16,26 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Label label = new Label("Please input your name:");
-        TextField input = new TextField();
+        Label label = new Label("");
+        //TextField input = new TextField();
         Button btn = new Button("Click Me");
+        Button game = new Button("Play Game");
+        Button conf = new Button("Configurations");
+        Button exit = new Button("Exit");
+
+
         StackPane root = new StackPane();
-        root.getChildren().addAll(label, input, btn);
+        root.getChildren().addAll(label, btn, game, conf, exit);
         btn.setOnAction(e -> {
             int x = 10;
             int y = x + 5;
             System.out.println(x + y);
             label.setText("Welcome to Tetris");
-            label.setText("Hello, " + input.getText() + "!");
+//            label.setText("Hello, " + input.getText() + "!");
         });
-        StackPane.setAlignment(label, Pos.TOP_CENTER);
-        StackPane.setAlignment(input, Pos.CENTER);
-        StackPane.setAlignment(btn, Pos.BOTTOM_CENTER);
+        StackPane.setAlignment(conf, Pos.CENTER_RIGHT);
+        StackPane.setAlignment(game, Pos.CENTER);
+        StackPane.setAlignment(exit, Pos.CENTER_LEFT);
         Scene scene = new Scene(root, 400, 200);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Tetris");
