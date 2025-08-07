@@ -1,5 +1,6 @@
 package org.oosd;
 
+
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,6 +9,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 
 public class Main extends Application {
     public static void main(String[] args) {
@@ -15,8 +18,17 @@ public class Main extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
-        Label label = new Label("Please input your name:");
+    public void start(Stage primaryStage) throws Exception {
+        //Test
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/GameScreen.fxml"));
+        Parent root = loader.load();
+
+        Scene scene = new Scene(root);
+        primaryStage.setTitle("Tetris Game");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        /** Label label = new Label("Please input your name:");
         TextField input = new TextField();
         Button btn = new Button("Click Me");
         StackPane root = new StackPane();
@@ -34,5 +46,6 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("JavaFX Demo");
         primaryStage.show();
+         */
     }
 }

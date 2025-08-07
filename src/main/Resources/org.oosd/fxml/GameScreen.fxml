@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This class is for designing main game UI-->
+
+<!--Use Anchor Pane to connect with controller class to implement functions
+ into each component and add controller address to connect-->
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      alignment="CENTER" spacing="20"
+      fx:controller="org.oosd.controller.GameController"
+      prefWidth="400" prefHeight="600"
+        fx:id="frameCanvas">
+
+        <Label text="Play" style="-fx-font-size: 24px;"/>
+
+        <!-- Game Canvas => This is main game screen size setting  -->
+        <Canvas fx:id="gameCanvas" width="300" height="600" />
+
+        <!--Create Move and Rotate buttons-->
+        <!--NOTE HBox => set buttons next -->
+        <HBox alignment="CENTER" spacing="20">
+            <Button fx:id="btnLeft" text="←" onAction="#moveLeft" prefWidth="50" prefHeight="50"/>
+            <Button fx:id="btnRotate" text="⟳" onAction="#rotateBlock" prefWidth="50" prefHeight="50"/>
+            <Button fx:id="btnRight" text="→" onAction="#moveRight" prefWidth="50" prefHeight="50"/>
+        </HBox>
+
+        <!-- Back Button -->
+        <Button fx:id="btnBack" text="Back" layoutX="150" layoutY="570" />
+</VBox>
