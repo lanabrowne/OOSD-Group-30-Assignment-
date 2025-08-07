@@ -11,6 +11,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.event.Event;
 
 public class Main extends Application {
     public static void main(String[] args) {
@@ -19,6 +20,21 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+
+        Button game = new Button("Play Game");
+        Button conf = new Button("Configurations");
+        Button exit = new Button("Exit");
+        Button random = new Button("random");
+
+
+        StackPane root = new StackPane();
+        root.getChildren().addAll(label, btn, game, conf, exit);
+        root.getChildren().addAll(label, btn, game, conf, exit, random);
+        btn.setOnAction(e -> {
+                    int x = 10;
+                    int y = x + 5;
+                });
+        /**
         //Test
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/GameScreen.fxml"));
         Parent root = loader.load();
@@ -28,7 +44,7 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        /** Label label = new Label("Please input your name:");
+        Label label = new Label("Please input your name:");
         TextField input = new TextField();
         Button btn = new Button("Click Me");
         StackPane root = new StackPane();
