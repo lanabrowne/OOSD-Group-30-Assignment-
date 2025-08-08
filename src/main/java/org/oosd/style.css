@@ -1,0 +1,11 @@
+#myPane {
+        -fx-background-image: url("images/background.png"); /* Relative path to your image */
+        -fx-background-repeat: stretch; /* or repeat, no-repeat, space, round */
+        -fx-background-size: cover; /* or contain, or specific dimensions like 100% 100% */
+        -fx-background-position: center center; /* or top left, etc. */
+    }
+  /* To set background for the entire scene */
+      .root {
+          -fx-background-image: url("src/main/resources/tetrisImage.jpg");
+          -fx-background-size: cover;
+      }
