@@ -6,10 +6,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -57,6 +56,7 @@ public class Main extends Application {
         root = new StackPane();
         scene = new Scene(root, fieldWidth, fieldHeight);
 
+
         showMainScreen();
 
         // adds title
@@ -91,6 +91,9 @@ public class Main extends Application {
         confButton.setPrefWidth(200);
         exitButton.setPrefWidth(200);
         highScoresButton.setPrefWidth(200);
+
+      // Load a background image??
+
 
         //links buttons to screen
         mainScreen.getChildren().addAll(label, gameButton, confButton, highScoresButton, exitButton);
