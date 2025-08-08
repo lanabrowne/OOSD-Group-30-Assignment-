@@ -105,56 +105,163 @@ public class Main extends Application {
         VBox configScreen = new VBox(10);
         configScreen.setPadding(new Insets(20));
         configScreen.setAlignment(Pos.CENTER);
+        Label Title = new Label("CONFIGURATION");
+        Title.setMaxWidth(Double.MAX_VALUE);
+        Title.setAlignment(Pos.CENTER);
 
-        //button & label declarations
-        Label label = new Label("Configurations");
-        label.setStyle("-fx-font-size: 36px; -fx-font-weight: bold;");
+        // Field Width
+        Label label = new Label("Field Width: (No of cells):");
+        label.setMinWidth(150);
+        Slider slider = new Slider(5, 15, 10);
+        slider.setShowTickLabels(true);
+        slider.setShowTickMarks(true);
+        slider.setMajorTickUnit(1);
+        slider.setMinorTickCount(0);
+        slider.setBlockIncrement(1);
+        slider.setPrefWidth(300);
+        HBox labelSliderRow = new HBox(30, label, slider);
+        labelSliderRow.setAlignment(Pos.CENTER_LEFT);
+
         Button backButton = new Button("Back");
-        CheckBox cb = new CheckBox("Has Shadow");
+        backButton.setOnAction(e->showMainScreen());
 
-        //Radiobutton for block colour
-        Label colorLabel = new Label("Color:");
-        RadioButton rbRed = new RadioButton("RED");
-        RadioButton rbBlue = new RadioButton("BLUE");
-        RadioButton rbGreen = new RadioButton("GREEN");
-        ToggleGroup group = new ToggleGroup();
-        rbBlue.setToggleGroup(group);
-        rbBlue.setOnAction(e->colorString="BLUE");
-        rbGreen.setToggleGroup(group);
-        rbGreen.setOnAction(e->colorString="GREEN");
-        rbRed.setToggleGroup(group);
-        rbRed.setOnAction(e->colorString="RED");
-        switch(colorString){
-            case "RED" -> rbRed.setSelected(true);
-            case "GREEN" -> rbGreen.setSelected(true);
-            default  -> rbBlue.setSelected(true);
-        }
 
-        // change block size
-        Label sizeLabel = new Label("Size: "+size);
-        Slider sizeSlider = new Slider(20,100, size);
-        sizeSlider.setShowTickMarks(true);
-        sizeSlider.setShowTickLabels(true);
-        sizeSlider.setMajorTickUnit(5);
-        sizeSlider.valueProperty().addListener(
-                (obs,oldVal,newVal) -> {
-                    size = newVal.intValue();
-                    sizeLabel.setText("Size: "+ size);
-                }
+
+        // Field Height
+        Label label2 = new Label("Field height: (No of cells):");
+        label2.setMinWidth(150);
+        Slider slider2 = new Slider(15, 30, 25);
+        slider2.setShowTickLabels(true);
+        slider2.setShowTickMarks(true);
+        slider2.setMajorTickUnit(5);
+        slider2.setMinorTickCount(0);
+        slider2.setBlockIncrement(1);
+        slider2.setPrefWidth(300);
+        HBox labelSlider2Row = new HBox(30, label2, slider2);
+        labelSlider2Row.setAlignment(Pos.CENTER_LEFT);
+
+
+        // Game Level
+        Label label3 = new Label("Game level:");
+        label3.setMinWidth(150);
+        Slider slider3 = new Slider(1, 10, 5);
+        slider3.setShowTickLabels(true);
+        slider3.setShowTickMarks(true);
+        slider3.setMajorTickUnit(1);
+        slider3.setMinorTickCount(0);
+        slider3.setBlockIncrement(1);
+        slider3.setPrefWidth(300);
+        HBox labelSlider3Row = new HBox(30, label3, slider3);
+        labelSlider3Row.setAlignment(Pos.CENTER_LEFT);
+
+        // Music Checkbox
+        Label musicLabel = new Label("Music:");
+        musicLabel.setMinWidth(150);
+        CheckBox checkBox = new CheckBox("Enable Music");
+        HBox labelCheckboxRow = new HBox(30, musicLabel, checkBox);
+        labelCheckboxRow.setAlignment(Pos.CENTER_LEFT);
+
+        checkBox.setOnAction(e -> {
+            if (checkBox.isSelected()) {
+                System.out.println("on");
+            } else {
+                System.out.println("off");
+            }
+        });
+
+        /*sound effect */
+        Label soundLabel = new Label("Sound Effect:");
+        soundLabel.setMinWidth(150);
+        CheckBox checkBox2 = new CheckBox("Enable Sound");
+        HBox labelCheckboxRow2 = new HBox(30, soundLabel, checkBox2);
+        labelCheckboxRow2.setAlignment(Pos.CENTER_LEFT);
+
+        checkBox2.setOnAction(e -> {
+            if (checkBox2.isSelected()) {
+                System.out.println("on");
+            } else {
+                System.out.println("off");
+            }
+        });
+
+// AI Checkbox
+        Label AILabel = new Label("AI Play (on/off):");
+        AILabel.setMinWidth(150);
+        CheckBox checkBox3 = new CheckBox("Enable AI");
+        HBox labelCheckboxRow3 = new HBox(30, AILabel, checkBox3);
+        labelCheckboxRow3.setAlignment(Pos.CENTER_LEFT);
+
+// Extend Checkbox
+        Label extendLabel = new Label("Extend Mode (on/off):");
+        extendLabel.setMinWidth(150);
+        CheckBox checkBox4 = new CheckBox("Enable Extend Mode");
+        HBox labelCheckboxRow4 = new HBox(30, extendLabel, checkBox4);
+        labelCheckboxRow4.setAlignment(Pos.CENTER_LEFT);
+
+
+
+        // Add all to root
+        configScreen.getChildren().addAll(
+                Title,
+                labelSliderRow,
+                labelSlider2Row,
+                labelSlider3Row,
+                labelCheckboxRow,
+                labelCheckboxRow2,
+                labelCheckboxRow3,
+                labelCheckboxRow4,
+                backButton
         );
 
-
-        //functionality
-        backButton.setOnAction(e->showMainScreen());
-        cb.setSelected(hasShadow);
-        cb.setOnAction(e->hasShadow = cb.isSelected());
-
-        // adds labels and buttons to screen
-        configScreen.getChildren().addAll(label,cb,
-                colorLabel,rbBlue,rbGreen,rbRed,
-                sizeLabel,sizeSlider,
-                backButton);
-        root.getChildren().setAll(configScreen);
+//        //button & label declarations
+//        Label label = new Label("Configurations");
+//        label.setStyle("-fx-font-size: 36px; -fx-font-weight: bold;");
+//        Button backButton = new Button("Back");
+//        CheckBox cb = new CheckBox("Has Shadow");
+//
+//        //Radiobutton for block colour
+//        Label colorLabel = new Label("Color:");
+//        RadioButton rbRed = new RadioButton("RED");
+//        RadioButton rbBlue = new RadioButton("BLUE");
+//        RadioButton rbGreen = new RadioButton("GREEN");
+//        ToggleGroup group = new ToggleGroup();
+//        rbBlue.setToggleGroup(group);
+//        rbBlue.setOnAction(e->colorString="BLUE");
+//        rbGreen.setToggleGroup(group);
+//        rbGreen.setOnAction(e->colorString="GREEN");
+//        rbRed.setToggleGroup(group);
+//        rbRed.setOnAction(e->colorString="RED");
+//        switch(colorString){
+//            case "RED" -> rbRed.setSelected(true);
+//            case "GREEN" -> rbGreen.setSelected(true);
+//            default  -> rbBlue.setSelected(true);
+//        }
+//
+//        // change block size
+//        Label sizeLabel = new Label("Size: "+size);
+//        Slider sizeSlider = new Slider(20,100, size);
+//        sizeSlider.setShowTickMarks(true);
+//        sizeSlider.setShowTickLabels(true);
+//        sizeSlider.setMajorTickUnit(5);
+//        sizeSlider.valueProperty().addListener(
+//                (obs,oldVal,newVal) -> {
+//                    size = newVal.intValue();
+//                    sizeLabel.setText("Size: "+ size);
+//                }
+//        );
+//
+//
+//        //functionality
+//        backButton.setOnAction(e->showMainScreen());
+//        cb.setSelected(hasShadow);
+//        cb.setOnAction(e->hasShadow = cb.isSelected());
+//
+//        // adds labels and buttons to screen
+//        configScreen.getChildren().addAll(label,cb,
+//                colorLabel,rbBlue,rbGreen,rbRed,
+//                sizeLabel,sizeSlider,
+//                backButton);
+           root.getChildren().setAll(configScreen);
     }
 
     private void showGameScreen(){
