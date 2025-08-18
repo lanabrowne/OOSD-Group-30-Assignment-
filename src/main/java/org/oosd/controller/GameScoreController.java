@@ -1,10 +1,11 @@
-package org.oosd;
+package org.oosd.controller;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.oosd.PlayerScore;
 
 public class GameScoreController {
 
