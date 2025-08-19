@@ -1,4 +1,4 @@
-package org.oosd;
+package org.oosd.controller;
 
 public class PlayerScore {
     private final int score;

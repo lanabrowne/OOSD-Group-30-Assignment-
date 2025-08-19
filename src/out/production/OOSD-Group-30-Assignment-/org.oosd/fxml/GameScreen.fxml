@@ -26,7 +26,8 @@
             <Button fx:id="btnLeft" text="←" onAction="#moveLeft" prefWidth="50" prefHeight="50"/>
             <Button fx:id="btnRotate" text="⟳" onAction="#rotateBlock" prefWidth="50" prefHeight="50"/>
             <Button fx:id="btnRight" text="→" onAction="#moveRight" prefWidth="50" prefHeight="50"/>
-        </HBox>
+            <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />    
+</HBox>
 
         <!-- Back Button -->
         <Button fx:id="btnBack" text="Back" layoutX="150" layoutY="570" />

@@ -16,6 +16,10 @@
       fx:id="frameCanvas">
 
         <Label text="Play" style="-fx-font-size: 24px;"/>
-        <Canvas fx:id="gameCanvas" width="300" height="500"/>
-        <Button fx:id="btnBack" text="Back"/>
+
+        <!-- Game Canvas => This is main game screen size setting  -->
+        <Canvas fx:id="gameCanvas" width="300" height="600" />
+
+        <!-- Back Button -->
+        <Button fx:id="btnBack" text="Back" layoutX="150" layoutY="570" />
 </VBox>

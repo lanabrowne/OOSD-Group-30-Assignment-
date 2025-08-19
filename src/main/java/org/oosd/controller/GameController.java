@@ -19,20 +19,25 @@
 
 
 package org.oosd.controller;
-
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+
+import java.util.Arrays;
+
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
+import javafx.scene.text.Font;
+ 
 
 /**
  * This class is controller class to control the tetris game.This class maintains
@@ -52,6 +57,8 @@ public class GameController {
     @FXML
     private Button btnBack;
 
+     @FXML
+    private Label lblGameOver;
 
     /**
      * This is the number of rows that will be shown in the UI.Actual Board
@@ -74,7 +81,7 @@ public class GameController {
      * set false as default and when user pressed down key, it will be true.
      */
     private boolean downPressed = false;
-    private GraphicsContext gc;
+   
 
     /**
      * The time of last drop execution.Measure the interval by comparing
@@ -84,6 +91,7 @@ public class GameController {
     //import Board class to user its methods
     private final Board board  = new Board(10,22);
 
+
     private Tetromino current;
     private Tetromino next;
 
@@ -91,6 +99,7 @@ public class GameController {
      * This is the main loop and this is called every frame. Calling the stepGravity
      * method by current drop
      */
+private GraphicsContext gc;
     private final AnimationTimer loop = new AnimationTimer() {
         @Override
         public void handle(long now) {
@@ -163,8 +172,23 @@ public class GameController {
         if(!spawnNext())
         {
             loop.stop();
+        showGameOver();
         }
+     
     }
+    private void showGameOver() {
+         lblGameOver.setText("Game Over");
+    gc.setFill(Color.BLACK);
+    gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+
+    gc.setFill(Color.RED);
+    gc.fillText("GAME OVER!", gameCanvas.getWidth() / 2 - 50, gameCanvas.getHeight() / 2);
+
+    System.out.println("GAME OVER!"); 
+    
+}
+
+
 
     /**
      *
@@ -209,6 +233,19 @@ public class GameController {
      * This is the method of designing the canvas. Set background color,
      * draw the block setting at game board, current block, and grid lines.
      */
+// Palette of colors for tetromino IDs
+// Index 0 is empty (no block)
+private static final Color[] PALETTE = {
+    Color.TRANSPARENT, // 0 - empty cell
+    Color.CYAN,        // 1 - I
+    Color.BLUE,        // 2 - J
+    Color.ORANGE,      // 3 - L
+    Color.YELLOW,      // 4 - O
+    Color.GREEN,       // 5 - S
+    Color.PURPLE,      // 6 - T
+    Color.RED          // 7 - Z
+};
+
     private void render()
     {
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
@@ -308,87 +345,110 @@ public class GameController {
      * Set initialized and start playing game.
      * Showing the first block and loop will be started.
      */
-    @FXML
-    public void initialize()
-    {
+private void drawInitialScreen() {
+    if (gc == null) gc = gameCanvas.getGraphicsContext2D();
 
-        //Collect Graphics Context
-        gc = gameCanvas.getGraphicsContext2D();
-        drawInitialScreen();
+    double w = gameCanvas.getWidth();
+    double h = gameCanvas.getHeight();
 
-        //Set canvas to available focus
-        gameCanvas.setFocusTraversable(true);
-        //Then when UI showed, take focus
-        Platform.runLater(() -> gameCanvas.requestFocus());
+    // Background
+    gc.setFill(Color.BLACK);
+    gc.fillRect(0, 0, w, h);
 
-        gameCanvas.sceneProperty().addListener((obs, oldSc, sc) -> {
-            if(sc == null)
-            {
-                return;
+    // Title
+    gc.setFill(Color.WHITE);
+    gc.setFont(Font.font(28));
+    String title = "TETRIS";
+    gc.fillText(title, (w - title.length() * 14) / 2, h * 0.35);
+
+    // Hint text
+    gc.setFont(Font.font(16));
+    gc.fillText("← → move   ↑ rotate   ↓ soft drop   P pause",
+            (w * 0.5) - 170, h * 0.50);
+    gc.fillText("Press any arrow key to start", (w * 0.5) - 120, h * 0.60);
+}
+
+   @FXML
+public void initialize() {
+    gc = gameCanvas.getGraphicsContext2D();
+    drawInitialScreen();
+
+
+    // Set canvas to focusable and request focus
+    gameCanvas.setFocusTraversable(true);
+    Platform.runLater(() -> gameCanvas.requestFocus());
+
+    // Key event handling
+    gameCanvas.sceneProperty().addListener((obs, oldSc, sc) -> {
+        if (sc == null) return;
+
+        // Key pressed
+        sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            switch (e.getCode()) {
+                case LEFT -> {
+                    if (tryMove(0, -1)) render();
+                }
+                case RIGHT -> {
+                    if (tryMove(0, 1)) render();
+                }
+                case UP -> {
+                    if (tryRotate(1)) render();
+                }
+                case DOWN -> downPressed = true;
+                case P -> togglePause();
             }
-            //Set key and key action
-            sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-                switch (e.getCode())
-                {
-                    case LEFT -> {if (tryMove(0, -1)) render();}
-                    case RIGHT -> {if (tryMove(0, 1)) render();}
-                    case UP -> {if (tryRotate(1)) render();}
-                    case DOWN -> downPressed = true;
-
-                }
-            });
-            //Set when user left action key (Drop fast),
-            //Back drop speed to default speed (Return false)
-
-            sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
-                //When user released down key,
-                //Back dropping speed to default speed
-                if(e.getCode() == KeyCode.DOWN)
-                {
-                    downPressed = false;
-                }
-            });
         });
 
+        // Key released
+        sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
+            if (e.getCode() == KeyCode.DOWN) {
+                downPressed = false;
+            }
+        });
+    });
 
+    // Spawn first Tetromino and start the game loop
+    spawnFirst();
+    loop.start();
+}
 
+// Class-level paused flag
+private boolean paused = false;
 
-
-
-
-        spawnFirst();
-        loop.start();
-
-
+// Toggle pause/resume
+private void togglePause() {
+    if (loop != null) {
+        if (paused) {
+            // Resume game
+            loop.start();
+            lblGameOver.setText("");
+            render(); // Re-render to remove pause overlay
+        } else {
+            // Pause game
+            pauseGame();
+        }
+        paused = !paused;
     }
+}
 
-    /**
-     * This is the basic initial design of game screen. (set background, title)
-     * while user playing the game, render will update UI
-     */
-    private void drawInitialScreen()
-    {
-       gc.setFill(Color.BLACK);
-       gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+// Display pause overlay
+private void pauseGame() {
+    loop.stop();
+    lblGameOver.setText("Paused");
 
-       //put skyblue colour into outside frame
-        gc.setFill(Color.LIGHTBLUE);
-        gc.fillRect(0,0,frameCanvas.getWidth(), frameCanvas.getHeight());
+    double canvasWidth = gameCanvas.getWidth();
+    double canvasHeight = gameCanvas.getHeight();
 
+    // Semi-transparent dark overlay
+    gc.setFill(Color.rgb(0, 0, 0, 0.7));
+    gc.fillRect(0, 0, canvasWidth, canvasHeight);
 
-
-        gc.setFill(Color.WHITE);
-        gc.fillText("Game Start!", 120, 100);
-    }
-
-
-    private static final Color[] PALETTE = {
-            null, Color.BLUE, Color.RED, Color.GREEN,
-            Color.PURPLE, Color.GRAY, Color.YELLOW, Color.SKYBLUE
-    };
-
-
-
-
-
+    // Centered PAUSED text
+    gc.setFill(Color.WHITE);
+    gc.setFont(javafx.scene.text.Font.font(36));
+    String pauseText = "PAUSED";
+    double textWidth = gc.getFont().getSize() * pauseText.length() * 0.6; // approximate width
+    double textHeight = gc.getFont().getSize();
+    gc.fillText(pauseText, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight / 2) / 2);
+}
 }
