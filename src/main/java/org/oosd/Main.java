@@ -7,16 +7,12 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import org.oosd.controller.GameController;
+import org.oosd.controller.GameScoreController;
 
 import java.io.IOException;
-import java.net.URL;
 
 
 public class Main extends Application {
@@ -65,9 +61,10 @@ public class Main extends Application {
         Button exitButton = new Button("Exit");
 
         //button functionality
-        confButton.setOnAction(e->showConfigScreen());
-        gameButton.setOnAction(e->showGameScreen());
-        exitButton.setOnAction(e->System.exit(0));
+        confButton.setOnAction(e -> showConfigScreen());
+        gameButton.setOnAction(e -> showGameScreen());
+        exitButton.setOnAction(e -> System.exit(0));
+        highScoresButton.setOnAction(e -> showHighScoreScreen());
 
         // sets the button sizes
         gameButton.setPrefWidth(200);
@@ -75,7 +72,7 @@ public class Main extends Application {
         exitButton.setPrefWidth(200);
         highScoresButton.setPrefWidth(200);
 
-      // Load a background image??
+        // Load a background image??
 
 
         //links buttons to screen
@@ -84,7 +81,7 @@ public class Main extends Application {
     }
 
 
-    private void showConfigScreen(){
+    private void showConfigScreen() {
         VBox configScreen = new VBox(10);
         configScreen.setPadding(new Insets(20));
         configScreen.setAlignment(Pos.CENTER);
@@ -106,8 +103,7 @@ public class Main extends Application {
         labelSliderRow.setAlignment(Pos.CENTER_LEFT);
 
         Button backButton = new Button("Back");
-        backButton.setOnAction(e->showMainScreen());
-
+        backButton.setOnAction(e -> showMainScreen());
 
 
         // Field Height
@@ -182,7 +178,6 @@ public class Main extends Application {
         labelCheckboxRow4.setAlignment(Pos.CENTER_LEFT);
 
 
-
         // Add all to root
         configScreen.getChildren().addAll(
                 Title,
@@ -196,7 +191,7 @@ public class Main extends Application {
                 backButton
         );
 
-           root.getChildren().setAll(configScreen);
+        root.getChildren().setAll(configScreen);
     }
 
     private void showGameScreen() {
@@ -206,16 +201,34 @@ public class Main extends Application {
             scene.setRoot(game);
 
             Button backButton = new Button("Back");
+            backButton.setLayoutX(10);
+            backButton.setLayoutY(10);
             backButton.setOnAction(e -> showMainScreen());
 
-            if (game instanceof Pane p) {
-                p.getChildren().add(backButton);
+            if (game instanceof AnchorPane ap) {
+                AnchorPane.setTopAnchor(backButton, 10.0);
+                AnchorPane.setLeftAnchor(backButton, 10.0);
+                ap.getChildren().add(backButton);
+
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void showHighScoreScreen() {
+        System.out.println("High score button clicked!");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/GameScoreScreen.fxml"));
+            Parent highScoreRoot = loader.load();
+            System.out.println("FXML loaded successfully!");
+            scene.setRoot(highScoreRoot);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
 }
 
-    }
 
 
