@@ -17,26 +17,47 @@ import java.io.IOException;
 
 public class Main extends Application {
 
+    /**
+     * menu screen and config screen were used
+     * get children command to use and fxml file screen was used root command
+     * to show. Using different command to show the screen was made error when
+     * we wanted to back to menu screen from another page because:
+     *
+     * Menu screen (Children node)
+     *  　　　　↓↓
+     *  　　　　↓↓  when we back to menu screen from Game screen,
+     * 　　　　 ↓↓  Root will return to null because Menu is not root.
+     * GameScreen (Root)
+     *
+     * So that we need to use only one (root) to move to all screens.
+     */
 
     //Global Variables
     private StackPane root;
-    private Scene scene;
+    private static Stage primaryStage;
+    private static Scene scene;
     private final double fieldWidth = 800;
     private final double fieldHeight = 600;
     private AnimationTimer timer;
 
 
-//    }
+    /**
+     * This is the main class to manage the execution and each screen.
+     * By using root, navigating to all pages.
+     * @param args
+     */
 
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage stage) throws Exception {
 
-        root = new StackPane();
-        scene = new Scene(root, fieldWidth, fieldHeight);
+        primaryStage = stage;
+
+        Parent menu = menuForm();
+        scene = new Scene(menu, fieldWidth, fieldHeight);
         // adds title
         primaryStage.setScene(scene);
         primaryStage.setTitle("Tetris");
@@ -45,8 +66,81 @@ public class Main extends Application {
         showMainScreen();
     }
 
-    private void showMainScreen() {
+    /**
+     * This method shows menu screen when application is executed.
+     * by using static void, we can call this method from another class and
+     * event to back to this screen from another screen.
+     */
+    public static void showMainScreen()
+    {
+        //Moved design code of menu screen to another method to set root f
+        //Use scene.setRoot command to switch the screen to menu screen.
+        scene.setRoot(menuForm());
+    }
 
+
+    /**
+     * This method is also showing config screen when user clicked
+     * config button from menu UI. This method should be private not to be used
+     * at another class.
+     */
+    private static void showConfigScreen() {
+        // using VBox to design of config screen
+        VBox config = buildConfigRoot();
+        //switch to config screen from menu screen using by root
+        scene.setRoot(config);
+    }
+
+    /**
+     * This method is open the tetris game screen read by fxml file
+     */
+    private static void showGameScreen() {
+        try {
+            //read fxml file (design of game screen) used by FXML Loader command
+            FXMLLoader loader = new FXMLLoader(Main.class.getResource("/org.oosd/fxml/GameScreen.fxml"));
+            // Load the file and convert to parent node
+            Parent game = loader.load();
+            //and to valid functions, obtain the controller which is related to this fxml file
+            //(GameController) --> then we can control all operations.
+            GameController gc = loader.getController();
+            //show the read game screen into UI
+            scene.setRoot(game);
+
+
+
+
+        } catch (IOException ex) {
+            //Just show the error log when reading file was failed.
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * This is the method that showing game score screen.
+     */
+    private static void showHighScoreScreen() {
+        //Just for the checking buttons action
+        System.out.println("High score button clicked!");
+
+        try {
+            //This is also used fxml loader to load fxml file which is designed for game score screen
+            FXMLLoader loader = new FXMLLoader(Main.class.getResource("/org.oosd/fxml/GameScoreScreen.fxml"));
+            //Load the file and convert to parent as well
+            Parent highScoreRoot = loader.load();
+            System.out.println("FXML loaded successfully!");
+            scene.setRoot(highScoreRoot);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * This method is just for the menu form design that located at show menu screen.
+     * this needed to be replaced to another method to use root navigation management.
+     * @return
+     */
+    private static Parent menuForm()
+    {
         VBox mainScreen = new VBox(10);
         mainScreen.setAlignment(Pos.CENTER);
         //Title
@@ -77,11 +171,16 @@ public class Main extends Application {
 
         //links buttons to screen
         mainScreen.getChildren().addAll(label, gameButton, confButton, highScoresButton, exitButton);
-        root.getChildren().setAll(mainScreen);
+        return mainScreen;
     }
 
-
-    private void showConfigScreen() {
+    /**
+     * This is also the config design code that used to be existed at show config method.
+     * This is also the same reason.
+     * @return
+     */
+    private static VBox buildConfigRoot()
+    {
         VBox configScreen = new VBox(10);
         configScreen.setPadding(new Insets(20));
         configScreen.setAlignment(Pos.CENTER);
@@ -104,6 +203,7 @@ public class Main extends Application {
 
         Button backButton = new Button("Back");
         backButton.setOnAction(e -> showMainScreen());
+
 
 
         // Field Height
@@ -191,42 +291,9 @@ public class Main extends Application {
                 backButton
         );
 
-        root.getChildren().setAll(configScreen);
+        return configScreen;
     }
 
-    private void showGameScreen() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/GameScreen.fxml"));
-            Parent game = loader.load();
-            scene.setRoot(game);
-
-            Button backButton = new Button("Back");
-            backButton.setLayoutX(10);
-            backButton.setLayoutY(10);
-            backButton.setOnAction(e -> showMainScreen());
-
-            if (game instanceof AnchorPane ap) {
-                AnchorPane.setTopAnchor(backButton, 10.0);
-                AnchorPane.setLeftAnchor(backButton, 10.0);
-                ap.getChildren().add(backButton);
-
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private void showHighScoreScreen() {
-        System.out.println("High score button clicked!");
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/GameScoreScreen.fxml"));
-            Parent highScoreRoot = loader.load();
-            System.out.println("FXML loaded successfully!");
-            scene.setRoot(highScoreRoot);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
 
 }
 
