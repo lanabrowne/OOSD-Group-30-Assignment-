@@ -30,9 +30,12 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import org.oosd.Main;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
+import javafx.event.ActionEvent;
+
 
 /**
  * This class is controller class to control the tetris game.This class maintains
@@ -86,6 +89,20 @@ public class GameController {
 
     private Tetromino current;
     private Tetromino next;
+
+    Main main = new Main();
+
+
+    //Create navigation method to redirect to menu screen
+    //by clicking back button
+    @FXML
+    public void backClicked(ActionEvent e)
+    {
+        loop.stop();
+        main.showMainScreen();
+
+    }
+
 
     /**
      * This is the main loop and this is called every frame. Calling the stepGravity
@@ -182,6 +199,7 @@ public class GameController {
             return true;
         }
         return false;
+
     }
 
     /**
@@ -368,7 +386,7 @@ public class GameController {
      */
     private void drawInitialScreen()
     {
-       gc.setFill(Color.BLACK);
+       gc.setFill(Color.rgb(227, 227, 227));
        gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
        //put skyblue colour into outside frame

@@ -5,7 +5,7 @@ package org.oosd.model;
  * and block actions (Move Right, Left and Rotation)
  */
 
-public class Tetromino {
+    public class Tetromino {
     //write block type into Board grid with block Id
     public final TetrominoType type;
     //Set game playing row top is 0 and count increment by going down
