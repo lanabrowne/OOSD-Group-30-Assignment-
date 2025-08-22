@@ -16,7 +16,6 @@
         </columns>
     </TableView>
 
-    <Button text="Back" prefWidth="100"/>
-   <Button fx:id="btnBack" text="Back" prefWidth="100"/>
+   <Button fx:id="btnBack" text="Back" onAction="#backClicked"/>
     <Label text="Author: Kosuke Sato" style="-fx-font-size: 12px; -fx-text-fill: gray;" />
 </VBox>

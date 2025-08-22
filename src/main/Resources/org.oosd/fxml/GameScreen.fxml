@@ -23,5 +23,8 @@
         <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />
 
         <!-- Back Button -->
-        <Button fx:id="btnBack" text="Back" layoutX="150" layoutY="570" />
+
+   <Button fx:id="btnBack" text="Back" onAction="#backClicked"/>
+
+         <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />    
 </VBox>
