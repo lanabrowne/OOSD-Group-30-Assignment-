@@ -39,6 +39,7 @@ public class Main extends Application {
     private final double fieldWidth = 800;
     private final double fieldHeight = 600;
     private AnimationTimer timer;
+    private static GameController gameController;
 
 
     /**
