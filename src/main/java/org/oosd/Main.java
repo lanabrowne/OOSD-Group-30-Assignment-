@@ -1,18 +1,23 @@
 package org.oosd;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.oosd.controller.GameController;
 import org.oosd.controller.GameScoreController;
 
 import java.io.IOException;
+import java.net.URL;
 
 
 public class Main extends Application {
@@ -36,8 +41,8 @@ public class Main extends Application {
     private StackPane root;
     private static Stage primaryStage;
     private static Scene scene;
-    private final double fieldWidth = 800;
-    private final double fieldHeight = 600;
+    private static final double fieldWidth = 800;
+    private static final double fieldHeight = 600;
     private AnimationTimer timer;
     private static GameController gameController;
 
@@ -52,11 +57,59 @@ public class Main extends Application {
         launch(args);
     }
 
+    public class SplashDemo extends Application {
+
+        @Override
+        public void start(Stage primaryStage) {
+
+        }
+
+
+    }
+
     @Override
     public void start(Stage stage) throws Exception {
-
         primaryStage = stage;
 
+        // Splash
+        Stage splashStage = new Stage();
+        URL splashUrl = getClass().getResource("/Images/TetrisSplashScreen.jpg");
+        if (splashUrl == null) throw new IllegalStateException("Splash image not found!");
+
+        ImageView splashImage = new ImageView(new Image(splashUrl.toExternalForm()));
+        splashImage.setFitWidth(300);
+        splashImage.setFitHeight(300);
+        splashImage.setPreserveRatio(true);
+        Label loadingLabel = new Label("Loading...");
+        StackPane splashLayout = new StackPane(splashImage, loadingLabel);
+        Scene splashScene = new Scene(splashLayout, 300, 300);
+        splashStage.setScene(splashScene);
+        splashStage.show();
+
+        // Simulate loading
+        Task<Void> loadTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                Thread.sleep(3000);
+                return null;
+            }
+
+            @Override
+            protected void succeeded() {
+                Platform.runLater(() -> {
+                    splashStage.close();
+                    // Initialize scene for the first time
+                    initializeMenuScreen();
+                });
+            }
+        };
+
+        new Thread(loadTask).start();
+    }
+
+
+    public static void initializeMenuScreen()
+    {
         Parent menu = menuForm();
         scene = new Scene(menu, fieldWidth, fieldHeight);
         // adds title
@@ -64,19 +117,19 @@ public class Main extends Application {
         primaryStage.setTitle("Tetris");
         // creates the overall box
         primaryStage.show();
-        showMainScreen();
     }
+
+
 
     /**
      * This method shows menu screen when application is executed.
      * by using static void, we can call this method from another class and
      * event to back to this screen from another screen.
      */
-    public static void showMainScreen()
-    {
-        //Moved design code of menu screen to another method to set root f
-        //Use scene.setRoot command to switch the screen to menu screen.
-        scene.setRoot(menuForm());
+    public static void showMainScreen() {
+        if (scene != null) {
+            scene.setRoot(menuForm());
+        }
     }
 
 
