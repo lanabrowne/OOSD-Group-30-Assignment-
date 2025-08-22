@@ -1,6 +1,6 @@
 /****************************************************************
  PROGRAM:   Game Controller for Tetris
- AUTHOR:    IKKEI FUKUTA,
+ AUTHOR:    IKKEI FUKUTA, 
 
  LOGON ID:  s5339308  (Student Number)
  DUE DATE:  24th Aug 2025
@@ -21,6 +21,7 @@
 package org.oosd.controller;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -33,6 +34,7 @@ import javafx.scene.paint.Color;
 
 import java.util.Arrays;
 
+import org.oosd.Main;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
@@ -90,6 +92,8 @@ public class GameController {
     private long lastDropNs = 0L;
     //import Board class to user its methods
     private final Board board  = new Board(10,22);
+
+    Main main = new Main();
 
 
     private Tetromino current;
@@ -413,28 +417,23 @@ public void initialize() {
 }
 
 // Class-level paused flag
+// Class-level paused flag
 private boolean paused = false;
 
-// Toggle pause/resume
+
+
+// Display pause overlay
 private void togglePause() {
-    if (loop != null) {
-        if (paused) {
-            // Resume game
-            loop.start();
-            lblGameOver.setText("");
-            render(); // Re-render to remove pause overlay
-        } else {
-            // Pause game
-            pauseGame();
-        }
-        paused = !paused;
+    if (paused) {
+        resumeGame();
+    } else {
+        pauseGame();
     }
 }
 
-// Display pause overlay
 private void pauseGame() {
     loop.stop();
-    lblGameOver.setText("Paused");
+    paused = true;
 
     double canvasWidth = gameCanvas.getWidth();
     double canvasHeight = gameCanvas.getHeight();
@@ -445,10 +444,21 @@ private void pauseGame() {
 
     // Centered PAUSED text
     gc.setFill(Color.WHITE);
-    gc.setFont(javafx.scene.text.Font.font(36));
-    String pauseText = "PAUSED";
-    double textWidth = gc.getFont().getSize() * pauseText.length() * 0.6; // approximate width
-    double textHeight = gc.getFont().getSize();
-    gc.fillText(pauseText, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight / 2) / 2);
+    gc.setFont(Font.font(36));
+    gc.fillText("PAUSED", canvasWidth / 2 - 60, canvasHeight / 2);
+}
+
+private void resumeGame() {
+    paused = false;
+    loop.start();
+    render(); // clears the overlay by redrawing board
+}
+
+@FXML
+public void backClicked(ActionEvent e) {
+    // stop the game loop
+    loop.stop();
+
+    main.showMainScreen();
 }
 }

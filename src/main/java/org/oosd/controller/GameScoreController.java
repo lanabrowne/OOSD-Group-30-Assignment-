@@ -1,12 +1,15 @@
 package org.oosd.controller;
 
 
+import org.oosd.Main;
+
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.event.ActionEvent;
 
 
 
@@ -22,13 +25,8 @@ public class GameScoreController {
 
     @FXML
     private Button btnBack;  // connect the Back button in FXML
-
-    // Callback to switch scene
-    private Runnable backAction;
-
-    public void setBackAction(Runnable action) {
-        this.backAction = action;
-    }
+    
+        Main main = new Main();
 
     @FXML
     public void initialize() {
@@ -56,14 +54,18 @@ public class GameScoreController {
                 new PlayerScore(60904, "Eric"),
                 new PlayerScore(77432, "Lisa"),
                 new PlayerScore(90965, "Lucy")
-        ));
+        ));}
         // Link Back button to callback
-        btnBack.setOnAction(e -> {
-            if (backAction != null) {
-                backAction.run();
-            }
-        });
-    }
+   @FXML
+public void backClicked(ActionEvent e) 
+{
+    // stop the game loop
+    
+
+    main.showMainScreen();
+ 
+}
+
 
 
 }
