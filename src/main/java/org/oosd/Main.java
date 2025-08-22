@@ -14,10 +14,13 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.oosd.controller.GameController;
-import org.oosd.controller.GameScoreController;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
-import java.net.URL;
 
 
 public class Main extends Application {
@@ -41,8 +44,8 @@ public class Main extends Application {
     private StackPane root;
     private static Stage primaryStage;
     private static Scene scene;
-    private static final double fieldWidth = 800;
-    private static final double fieldHeight = 600;
+    private static final double fieldWidth = 500;
+    private static final double fieldHeight = 800;
     private AnimationTimer timer;
     private static GameController gameController;
 
@@ -71,41 +74,72 @@ public class Main extends Application {
     public void start(Stage stage) throws Exception {
         primaryStage = stage;
 
-        // Splash
         Stage splashStage = new Stage();
-        URL splashUrl = getClass().getResource("/Images/TetrisSplashScreen.jpg");
-        if (splashUrl == null) throw new IllegalStateException("Splash image not found!");
+        splashStage.initStyle(StageStyle.UNDECORATED);
+        splashStage.setAlwaysOnTop(true);
 
-        ImageView splashImage = new ImageView(new Image(splashUrl.toExternalForm()));
-        splashImage.setFitWidth(300);
-        splashImage.setFitHeight(300);
-        splashImage.setPreserveRatio(true);
-        Label loadingLabel = new Label("Loading...");
-        StackPane splashLayout = new StackPane(splashImage, loadingLabel);
-        Scene splashScene = new Scene(splashLayout, 300, 300);
+        BorderPane splashScreen = new BorderPane();
+        splashScreen.setStyle("-fx-background-color: white;");
+
+        // load images
+        Image tetrisTopImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenTop.jpg"));
+        Image tetrisBottomImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenBottom.jpg"));
+
+        // Top banner
+        ImageView topImg = new ImageView(tetrisTopImg);
+        topImg.setPreserveRatio(true);
+        splashScreen.setTop(topImg);
+        BorderPane.setAlignment(topImg, Pos.CENTER);
+
+        // Bottom banner
+        ImageView bottomImg = new ImageView(tetrisBottomImg);
+        bottomImg.setPreserveRatio(true);
+        splashScreen.setBottom(bottomImg);
+        BorderPane.setAlignment(bottomImg, Pos.CENTER);
+
+        // Group information text in centre of screen
+        VBox textBox = new VBox(10);
+        textBox.setAlignment(Pos.CENTER);
+        Text groupInfo = new Text(
+                "Group ID: PG 30\n" +
+                        "Members:\n" +
+                        "s5340293, Lana Browne, 2805ICT\n" +
+                        "s5350825, Taylor Brown, 2006ICT\n" +
+                        "s5404819, Ria Rajesh, 2006ICT\n" +
+                        "s5339308, Ikkei Fukuta, 2006ICT\n" +
+                        "s5373939, Kosuke Sato, 2006ICT"
+        );
+        groupInfo.setStyle("-fx-fill: black; -fx-font-size: 22px;");
+        textBox.getChildren().add(groupInfo);
+        splashScreen.setCenter(textBox);
+
+        // Scene and show
+        Scene splashScene = new Scene(splashScreen, fieldWidth, fieldHeight);
+        topImg.fitWidthProperty().bind(splashScene.widthProperty());
+        bottomImg.fitWidthProperty().bind(splashScene.widthProperty());
+
         splashStage.setScene(splashScene);
+        splashStage.centerOnScreen();
         splashStage.show();
 
-        // Simulate loading
+        // Simulate loading task (keep as-is)
         Task<Void> loadTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                Thread.sleep(3000);
+                Thread.sleep(4000);
                 return null;
             }
-
             @Override
             protected void succeeded() {
                 Platform.runLater(() -> {
                     splashStage.close();
-                    // Initialize scene for the first time
                     initializeMenuScreen();
                 });
             }
         };
-
         new Thread(loadTask).start();
     }
+
 
 
     public static void initializeMenuScreen()
