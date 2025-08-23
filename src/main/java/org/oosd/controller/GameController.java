@@ -11,7 +11,7 @@
  INPUT:     GitHub\OOSD-Group-30-Assignment-
  disk
 
- OUTPUT:    l
+ OUTPUT:    
 
  NOTES:     any relevant information that would be of
  additional help to someone looking at the program.
@@ -19,6 +19,7 @@
 
 
 package org.oosd.controller;
+import javafx.scene.text.Text;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -31,6 +32,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
 import java.util.Arrays;
 
@@ -92,8 +96,6 @@ public class GameController {
     private long lastDropNs = 0L;
     //import Board class to user its methods
     private final Board board  = new Board(10,22);
-
-    Main main = new Main();
 
 
     private Tetromino current;
@@ -180,20 +182,48 @@ private GraphicsContext gc;
         }
      
     }
-    private void showGameOver() {
-         lblGameOver.setText("Game Over");
-    gc.setFill(Color.BLACK);
-    gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+private void showGameOver() {
+    // Stop game loop immediately
+    loop.stop();
 
-    gc.setFill(Color.RED);
-    gc.fillText("GAME OVER!", gameCanvas.getWidth() / 2 - 50, gameCanvas.getHeight() / 2);
+    // Ensure gc is initialized
+    if (gc == null) gc = gameCanvas.getGraphicsContext2D();
 
-    System.out.println("GAME OVER!"); 
-    
+    // Use Platform.runLater to make sure drawing happens on the FX Application Thread
+    Platform.runLater(() -> {
+        double canvasWidth = gameCanvas.getWidth();
+        double canvasHeight = gameCanvas.getHeight();
+
+         Stop[] stops = new Stop[] {
+            new Stop(0, Color.rgb(0, 0, 0, 0.8)),    // Top: dark, almost black
+            new Stop(1, Color.rgb(255, 0, 0, 0.8))   // Bottom: dark red
+        };
+        LinearGradient lg = new LinearGradient(
+            0, 0, 0, 1, // startX, startY, endX, endY (0-1 normalized)
+            true,        // proportional
+            CycleMethod.NO_CYCLE,
+            stops
+        );
+          gc.setFill(lg);
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Centered "GAME OVER" text
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Arial", 36));
+
+        String message = "GAME OVER";
+        Text tempText = new Text(message);
+        tempText.setFont(Font.font("Arial", 36));
+        double textWidth = tempText.getLayoutBounds().getWidth();
+        double textHeight = tempText.getLayoutBounds().getHeight();
+
+        gc.fillText(message, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight) / 2);
+    });
 }
 
 
 
+   
     /**
      *
      * @param dr --> row difference (down + 1)
@@ -454,11 +484,14 @@ private void resumeGame() {
     render(); // clears the overlay by redrawing board
 }
 
+Main main = new Main();
 @FXML
-public void backClicked(ActionEvent e) {
-    // stop the game loop
-    loop.stop();
+
+public void backClicked(ActionEvent e) 
+{
+  loop.stop();
 
     main.showMainScreen();
+ 
 }
 }
