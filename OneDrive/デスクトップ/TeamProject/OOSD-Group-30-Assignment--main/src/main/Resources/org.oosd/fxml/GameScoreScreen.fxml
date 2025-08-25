@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.oosd.controller.GameScoreController"
+      spacing="10" alignment="CENTER" prefWidth="300" prefHeight="600">
+
+    <Label text="Game High Score" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+
+    <TableView fx:id="scoreTable" prefWidth="300" prefHeight="550">
+        <columns>
+            <TableColumn fx:id="nameColumn" text="Name" prefWidth="150" style="-fx-alignment: CENTER-LEFT;" />
+            <TableColumn fx:id="scoreColumn" text="Score" prefWidth="150" style="-fx-alignment: CENTER-LEFT;" />
+        </columns>
+    </TableView>
+
+   <Button fx:id="btnBack" text="Back" onAction="#backClicked"/>
+    <Label text="Author: Kosuke Sato" style="-fx-font-size: 12px; -fx-text-fill: gray;" />
+</VBox>
