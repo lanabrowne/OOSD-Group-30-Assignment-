@@ -32,6 +32,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
+import java.net.URL;
 import java.util.Arrays;
 
 import org.oosd.Main;
@@ -39,6 +40,8 @@ import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
 import javafx.scene.text.Font;
+import javafx.fxml.Initializable;
+import java.util.ResourceBundle;
  
 
 /**
@@ -49,7 +52,7 @@ import javafx.scene.text.Font;
  * And making design of canvas (set 2 rows invisible to judge for game over)
  */
 
-public class GameController {
+public class GameController implements Initializable {
     @FXML
     private Canvas gameCanvas;
 
@@ -372,11 +375,25 @@ private void drawInitialScreen() {
     gc.fillText("Press any arrow key to start", (w * 0.5) - 120, h * 0.60);
 }
 
-   @FXML
-public void initialize() {
+    /**
+     * This method is execution method for running tetris game. Put all methods we created into this class
+     * to make it works
+     *
+     * @param url
+     * The location used to resolve relative paths for the root object, or
+     * {@code null} if the location is not known.
+     *
+     * @param rb
+     * The resources used to localize the root object, or {@code null} if
+     * the root object was not localized.
+     */
+    @Override
+public void initialize(URL url, ResourceBundle rb) {
     gc = gameCanvas.getGraphicsContext2D();
     drawInitialScreen();
 
+    gameCanvas.setFocusTraversable(true);
+    Platform.runLater(() -> gameCanvas.requestFocus());
 
     // Set canvas to focusable and request focus
     gameCanvas.setFocusTraversable(true);
@@ -402,7 +419,6 @@ public void initialize() {
                 case P -> togglePause();
             }
         });
-
         // Key released
         sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
             if (e.getCode() == KeyCode.DOWN) {
@@ -416,13 +432,16 @@ public void initialize() {
     loop.start();
 }
 
-// Class-level paused flag
-// Class-level paused flag
-private boolean paused = false;
+    /**
+     * Class-level paused flag
+     * Class-level paused flag
+     */
+    private boolean paused = false;
 
 
-
-// Display pause overlay
+    /**
+     * Display pause overlay
+     */
 private void togglePause() {
     if (paused) {
         resumeGame();
@@ -431,7 +450,10 @@ private void togglePause() {
     }
 }
 
-private void pauseGame() {
+    /**
+     * This method is writing the pause and designing of GameOver
+     */
+    private void pauseGame() {
     loop.stop();
     paused = true;
 

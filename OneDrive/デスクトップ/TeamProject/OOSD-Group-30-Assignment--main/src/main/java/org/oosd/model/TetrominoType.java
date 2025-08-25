@@ -1,5 +1,7 @@
 package org.oosd.model;
 
+
+
 // Use enum to manage multiple constants into a type safe manager
 
 /**
@@ -8,68 +10,34 @@ package org.oosd.model;
  * So that this class is designing type of blocks and block id and colour id
  * to pass to the controller and Tetromino class to put functions
  */
-public enum TetrominoType {
-    // Make each block holds "id", and "Color Id"
-    I(1, 1), O(2, 2), T(3, 3), S(4, 4), Z(5, 5), J(6, 6), L(7, 7);
+public enum TetrominoType{
+
+    // id, colorId, shapes(record)
+    //To send to record type class
+    I(1, 1, new TetrominoSpec(TetrominoShapes.SHAPES_I)),
+    O(2, 2, new TetrominoSpec(TetrominoShapes.SHAPES_O)),
+    T(3, 3, new TetrominoSpec(TetrominoShapes.SHAPES_T)),
+    S(4, 4, new TetrominoSpec(TetrominoShapes.SHAPES_S)),
+    Z(5, 5, new TetrominoSpec(TetrominoShapes.SHAPES_Z)),
+    J(6, 6, new TetrominoSpec(TetrominoShapes.SHAPES_J)),
+    L(7, 7, new TetrominoSpec(TetrominoShapes.SHAPES_L));
 
     public final int id;
     public final int colorId;
+    //Hold record in this class
+    private final TetrominoSpec spec;
 
-    TetrominoType(int id, int colorId)
+
+    TetrominoType(int id, int colorId, TetrominoSpec spec)
     {
         this.id = id;
         this.colorId = colorId;
+        this.spec = spec;
     }
 
-    /**
-     * This  method is definition of shapes
-     * This method is including all "Type", "rot" (rotation num), "cell", "coord" (row, col)
-     */
-    private static final int [][][][] SHAPES = {
 
-            // I
-            { { {0,0},{1,0},{2,0},{3,0} },  //default shape rotation no.0
-                    { {0,0},{0,1},{0,2},{0,3} },  //Rotate to right No,1
-                    { {0,0},{1,0},{2,0},{3,0} },  //Rotate 180 No.2
-                    { {0,0},{0,1},{0,2},{0,3} }   //Rotate to Left No.3
-            },
-            // O
-            { { {0,0},{1,0},{0,1},{1,1} },
-                    { {0,0},{1,0},{0,1},{1,1} },
-                    { {0,0},{1,0},{0,1},{1,1} },
-                    { {0,0},{1,0},{0,1},{1,1} }
-            },
-            // T
-            { { {0,0},{1,0},{2,0},{1,1} },
-                    { {1,0},{1,1},{1,2},{0,1} },
-                    { {0,1},{1,1},{2,1},{1,0} },
-                    { {0,0},{0,1},{0,2},{1,1} }
-            },
-            // S
-            { { {1,0},{2,0},{0,1},{1,1} },
-                    { {0,0},{0,1},{1,1},{1,2} },
-                    { {1,1},{2,1},{0,2},{1,2} },
-                    { {1,0},{1,1},{2,1},{2,2} }
-            },
-            // Z
-            { { {0,0},{1,0},{1,1},{2,1} },
-                    { {1,0},{0,1},{1,1},{0,2} },
-                    { {0,1},{1,1},{1,2},{2,2} },
-                    { {2,0},{1,1},{2,1},{1,2} }
-            },
-            // J
-            { { {0,0},{0,1},{1,1},{2,1} },
-                    { {0,0},{0,1},{0,2},{1,0} },
-                    { {0,0},{1,0},{2,0},{2,1} },
-                    { {1,0},{1,1},{1,2},{0,2} }
-            },
-            // L
-            { { {0,1},{1,1},{2,1},{2,0} },
-                    { {0,0},{0,1},{0,2},{1,2} },
-                    { {0,0},{1,0},{2,0},{0,1} },
-                    { {1,0},{1,1},{1,2},{0,0} }
-            }
-    };
+
+
 
     /**
      * This returns the  4 cell relative coordinates
@@ -79,7 +47,7 @@ public enum TetrominoType {
     public int[][] cells(int rotation)
     {
 
-        return SHAPES[ordinal()][rotation & 3];
+        return spec.rotations()[rotation & 3];
     }
 
 }
