@@ -1,7 +1,7 @@
 //clears rows and moves the remaining tetromino down :)
 package org.oosd.model;
 
-import java.util.Arrays; 
+import java.util.Arrays;
 
 
 public class Board {
@@ -14,7 +14,7 @@ public class Board {
         this.h = height;
         this.grid = new int[h][w]; // row-major grid
     }
-//locking the tetromino into the grid by marking their positions with the colorID
+    //locking the tetromino into the grid by marking their positions with the colorID
 //In conclusion, this happens when the tetromino lands and can no longer move 
     public void lock(Tetromino t) {
         for (int[] pos : t.cells()) {

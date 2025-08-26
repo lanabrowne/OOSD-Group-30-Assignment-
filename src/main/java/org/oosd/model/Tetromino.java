@@ -5,7 +5,7 @@ package org.oosd.model;
  * and block actions (Move Right, Left and Rotation)
  */
 
-public class Tetromino {
+public class Tetromino extends AbstractPiece{
     //write block type into Board grid with block Id
     public final TetrominoType type;
     //Set game playing row top is 0 and count increment by going down
@@ -14,6 +14,18 @@ public class Tetromino {
     public int col;
     //Set rotation number 0 = default, +1 = rotate right side +2 = 180, +3 = left rotate
     public int rotation;
+
+    /**
+     * return the position of 4 cells by rotation
+     * the value of position is [x row, y col]
+     * @return
+     */
+    @Override
+    public int[][] cells()
+    {
+        return type.cells(rotation);
+    }
+
 
     /**
      * Initialize the type, color and shape for creating new instance
@@ -32,15 +44,8 @@ public class Tetromino {
         this.col = col;
     }
 
-    /**
-     * return the position of 4 cells by rotation
-     * the value of position is [x row, y col]
-     * @return
-     */
-    public int[][] cells()
-    {
-        return type.cells(rotation);
-    }
+
+
 
 
     /**
