@@ -312,7 +312,7 @@ public class Main extends Application {
     return configScreen;
 }
 
-    private static boolean confirmExit() {
+    public static boolean confirmExit() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Exit Confirmation");
         alert.setHeaderText("Confirm Exit");

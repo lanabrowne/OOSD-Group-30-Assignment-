@@ -491,7 +491,11 @@ public void backClicked(ActionEvent e)
 {
   loop.stop();
 
-    main.showMainScreen();
+  if (Main.confirmExit()) {
+      Platform.exit();
+  } else {
+      Main.showMainScreen();
+  }
  
 }
 }
