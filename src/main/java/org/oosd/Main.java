@@ -36,8 +36,8 @@ public class Main extends Application {
     private StackPane root;
     private static Stage primaryStage;
     private static Scene scene;
-    private final double fieldWidth = 800;
-    private final double fieldHeight = 600;
+    private final double fieldWidth = 500;
+    private final double fieldHeight = 750;
     private AnimationTimer timer;
 
     /**
