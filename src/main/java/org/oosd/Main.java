@@ -2,6 +2,7 @@ package org.oosd;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -14,6 +15,7 @@ import org.oosd.controller.GameController;
 import org.oosd.controller.GameScoreController;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class Main extends Application {
 
@@ -156,8 +158,20 @@ public class Main extends Application {
         // button functionality
         confButton.setOnAction(e -> showConfigScreen());
         gameButton.setOnAction(e -> showGameScreen());
-        exitButton.setOnAction(e -> System.exit(0));
         highScoresButton.setOnAction(e -> showHighScoreScreen());
+        /*
+        when back is pressed, if it is pressed on the menu screen-
+        a confirmation screen will appear yes -> leaves game no -> nothing happens
+        if the back button is pressed on any other screen,
+        the player will return to the main screen
+         */
+        exitButton.setOnAction(e -> {
+            if (confirmExit()){
+                Platform.exit();
+            } else {
+                showMainScreen();
+            }
+        });
 
         // sets the button sizes
         gameButton.setPrefWidth(200);
@@ -297,4 +311,18 @@ public class Main extends Application {
 
     return configScreen;
 }
+
+    private static boolean confirmExit() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Exit Confirmation");
+        alert.setHeaderText("Confirm Exit");
+        alert.setContentText("Are you sure you want to exit?");
+
+        ButtonType yesButton = new ButtonType("Yes", ButtonBar.ButtonData.YES);
+        ButtonType noButton = new ButtonType("No", ButtonBar.ButtonData.NO);
+        alert.getButtonTypes().setAll(yesButton, noButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == yesButton;
+    }
 }
