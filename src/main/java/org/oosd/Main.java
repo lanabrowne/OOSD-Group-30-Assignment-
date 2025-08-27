@@ -3,14 +3,19 @@ package org.oosd;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import org.oosd.controller.GameController;
 import org.oosd.controller.GameScoreController;
 
@@ -38,8 +43,8 @@ public class Main extends Application {
     private StackPane root;
     private static Stage primaryStage;
     private static Scene scene;
-    private final double fieldWidth = 500;
-    private final double fieldHeight = 750;
+    private static final double fieldWidth = 500;
+    private static final double fieldHeight = 750;
     private AnimationTimer timer;
 
     /**
@@ -53,11 +58,82 @@ public class Main extends Application {
         launch(args);
     }
 
+    // Starts application with Splash Screen
     @Override
     public void start(Stage stage) throws Exception {
 
         primaryStage = stage;
 
+        Stage splashStage = new Stage();
+        splashStage.initStyle(StageStyle.UNDECORATED);
+        splashStage.setAlwaysOnTop(true);
+
+        BorderPane splashScreen = new BorderPane();
+        splashScreen.setStyle("-fx-background-color: white;");
+
+        // load images
+        Image tetrisTopImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenTop.jpg"));
+        Image tetrisBottomImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenBottom.jpg"));
+
+        // Top banner
+        ImageView topImg = new ImageView(tetrisTopImg);
+        topImg.setPreserveRatio(true);
+        splashScreen.setTop(topImg);
+        BorderPane.setAlignment(topImg, Pos.CENTER);
+
+        // Bottom banner
+        ImageView bottomImg = new ImageView(tetrisBottomImg);
+        bottomImg.setPreserveRatio(true);
+        splashScreen.setBottom(bottomImg);
+        BorderPane.setAlignment(bottomImg, Pos.CENTER);
+
+        // Group information text in centre of screen
+        VBox textBox = new VBox(10);
+        textBox.setAlignment(Pos.CENTER);
+        Text groupInfo = new Text(
+                "Group ID: PG 30\n" +
+                        "Members:\n" +
+                        "s5340293, Lana Browne, 2805ICT\n" +
+                        "s5350825, Taylor Brown, 2006ICT\n" +
+                        "s5404819, Ria Rajesh, 2006ICT\n" +
+                        "s5339308, Ikkei Fukuta, 2006ICT\n" +
+                        "s5373939, Kosuke Sato, 2006ICT"
+        );
+        groupInfo.setStyle("-fx-fill: black; -fx-font-size: 22px;");
+        textBox.getChildren().add(groupInfo);
+        splashScreen.setCenter(textBox);
+
+        // Scene and show
+        Scene splashScene = new Scene(splashScreen, fieldWidth, fieldHeight);
+        topImg.fitWidthProperty().bind(splashScene.widthProperty());
+        bottomImg.fitWidthProperty().bind(splashScene.widthProperty());
+
+        splashStage.setScene(splashScene);
+        splashStage.centerOnScreen();
+        splashStage.show();
+
+        // Simulate loading task (keep as-is)
+        Task<Void> loadTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                Thread.sleep(4000);
+                return null;
+            }
+            @Override
+            protected void succeeded() {
+                Platform.runLater(() -> {
+                    splashStage.close();
+                    initializeMenuScreen();
+                });
+            }
+        };
+        new Thread(loadTask).start();
+    }
+
+
+
+    public static void initializeMenuScreen()
+    {
         Parent menu = menuForm();
         scene = new Scene(menu, fieldWidth, fieldHeight);
         // adds title
@@ -65,7 +141,6 @@ public class Main extends Application {
         primaryStage.setTitle("Tetris");
         // creates the overall box
         primaryStage.show();
-        showMainScreen();
     }
 
     /**
