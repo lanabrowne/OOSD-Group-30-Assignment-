@@ -115,8 +115,9 @@ public class Main extends Application {
 
     /**
      * This is the method that showing game score screen.
+     * Had to make method public so that the end game button could directly link to this screen
      */
-    private static void showHighScoreScreen() {
+    public static void showHighScoreScreen() {
         // Just for the checking buttons action
         System.out.println("High score button clicked!");
 

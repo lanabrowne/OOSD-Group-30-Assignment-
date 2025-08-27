@@ -22,9 +22,11 @@
 
         <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />
 
+    <!--End button -->
+    <Button fx:id="end" text="End game" onAction="#endClicked"/>
         <!-- Back Button -->
+<!--   <Button fx:id="btnBack" text="Back" onAction="#backClicked"/>-->
 
-   <Button fx:id="btnBack" text="Back" onAction="#backClicked"/>
 
          <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />    
 </VBox>

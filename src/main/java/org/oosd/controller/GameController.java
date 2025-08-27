@@ -66,6 +66,9 @@ public class GameController {
      @FXML
     private Label lblGameOver;
 
+    @FXML
+    private Button end;  // button after game ends that goes to the HS screen
+
     /**
      * This is the number of rows that will be shown in the UI.Actual Board
      * is 22 lines but hide 2 lines to judge the game over
@@ -218,6 +221,7 @@ private void showGameOver() {
         double textHeight = tempText.getLayoutBounds().getHeight();
 
         gc.fillText(message, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight) / 2);
+        Button end;
     });
 }
 
@@ -498,4 +502,11 @@ public void backClicked(ActionEvent e)
   }
  
 }
+    public void endClicked(ActionEvent e)
+    {
+        loop.stop();
+
+        Main.showHighScoreScreen();
+
+    }
 }
