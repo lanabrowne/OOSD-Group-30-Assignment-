@@ -1,0 +1,43 @@
+.root {
+    -fx-background-color: #f0f0f0;
+}
+
+.wrapper {
+    -fx-background-color: white;
+    /* You can also add background images in JavaFX like this: */
+    -fx-background-image: url("/Images/tetris.jpg");
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+.title {
+    -fx-font-family: "Montserrat Black";
+        -fx-font-size: 120px;
+        -fx-text-fill: white;
+        -fx-text-alignment: center;
+
+        /* Heavy shadow similar to your SCSS loop */
+        -fx-effect: dropshadow(gaussian, white, 20, 0.8, 4, 4);
+}
+.label {
+    -fx-text-fill: #333333;
+    -fx-font-family: "Arial";
+}
+
+
+.button {
+    -fx-background-color: black;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.button:hover {
+    -fx-background-color: #45a049;
+}
+
+
+
+
+
+

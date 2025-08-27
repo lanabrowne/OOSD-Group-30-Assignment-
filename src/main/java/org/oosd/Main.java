@@ -13,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -58,12 +59,21 @@ public class Main extends Application {
         launch(args);
     }
 
-    // Starts application with Splash Screen
     @Override
     public void start(Stage stage) throws Exception {
 
         primaryStage = stage;
+        // pass Stage object to splash screen class
+        buildSplashScreen(stage);
+        //Loads font for main screen
+        Font.loadFont(Main.class.getResource("/fonts/Montserrat-Black.ttf").toExternalForm(), 120);
 
+    }
+
+    //Builds splash screen
+    private static void buildSplashScreen(Stage stage){
+
+        primaryStage = stage;
         Stage splashStage = new Stage();
         splashStage.initStyle(StageStyle.UNDECORATED);
         splashStage.setAlwaysOnTop(true);
@@ -128,6 +138,7 @@ public class Main extends Application {
             }
         };
         new Thread(loadTask).start();
+
     }
 
 
@@ -136,6 +147,7 @@ public class Main extends Application {
     {
         Parent menu = menuForm();
         scene = new Scene(menu, fieldWidth, fieldHeight);
+        scene.getStylesheets().add(Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
         // adds title
         primaryStage.setScene(scene);
         primaryStage.setTitle("Tetris");
@@ -219,10 +231,13 @@ public class Main extends Application {
      */
     private static Parent menuForm() {
         VBox mainScreen = new VBox(10);
+        // add background images css
+        mainScreen.getStyleClass().add("wrapper");
         mainScreen.setAlignment(Pos.CENTER);
         // Title
-        Label label = new Label("Tetris");
-        label.setStyle("-fx-font-size: 36px; -fx-font-weight: bold;");
+        Label title = new Label("Tetris");
+        title.getStyleClass().add("title");
+        //title.setStyle("-fx-font-size: 36px; -fx-font-weight: bold;");
 
         // Buttons
         Button btn = new Button("Click Me");
@@ -258,7 +273,7 @@ public class Main extends Application {
         // Load a background image??
 
         // links buttons to screen
-        mainScreen.getChildren().addAll(label, gameButton, confButton, highScoresButton, exitButton);
+        mainScreen.getChildren().addAll(title, gameButton, confButton, highScoresButton, exitButton);
         return mainScreen;
     }
 
