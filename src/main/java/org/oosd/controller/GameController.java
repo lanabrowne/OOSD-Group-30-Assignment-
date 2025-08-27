@@ -1,20 +1,30 @@
 /****************************************************************
  PROGRAM:   Game Controller for Tetris
- AUTHOR:    IKKEI FUKUTA, 
+ AUTHORS:   Ikke Fukuta, Ria Rajesh, Taylor Brown, 
+            Lana Browne, Kosuke Suto
 
- LOGON ID:  s5339308  (Student Number)
- DUE DATE:  24th Aug 2025
+ STUDENT ID: s5339308
+ DUE DATE:   27th Aug 2025
 
- FUNCTION:  The Game control class to put functions into key
- program.
+ FUNCTION: 
+    This class controls the Tetris game. It manages the game 
+    board, the current and next tetrominoes, and user inputs. 
+    It also handles gravity, movement, rotation, soft drop, 
+    fast drop, pause/resume, and game over detection. 
+    Additionally, it renders the game state onto the canvas.
 
- INPUT:     GitHub\OOSD-Group-30-Assignment-
- disk
+ INPUT:  
+    User keyboard input (arrow keys, P key).
+    Loaded from: GitHub\OOSD-Group-30-Assignment-
 
- OUTPUT:    
+ OUTPUT: 
+    Visual game rendering on the JavaFX Canvas.
+    Game over screen and pause overlay.
 
- NOTES:     any relevant information that would be of
- additional help to someone looking at the program.
+ NOTES:  
+    - The board has 22 rows, with the top 2 hidden for spawning. 
+    - Game loop is handled via JavaFX AnimationTimer.
+    - Designed for integration with the Main application class.
  ****************************************************************/
 
 
