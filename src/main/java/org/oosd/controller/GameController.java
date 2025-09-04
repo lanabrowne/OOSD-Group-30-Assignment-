@@ -49,6 +49,8 @@ import javafx.scene.paint.Stop;
 import java.util.Arrays;
 
 import org.oosd.Main;
+import org.oosd.config.ConfigService;
+import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
@@ -79,6 +81,10 @@ public class GameController {
     @FXML
     private Button end;  // button after game ends that goes to the HS screen
 
+
+
+
+
     /**
      * This is the number of rows that will be shown in the UI.Actual Board
      * is 22 lines but hide 2 lines to judge the game over
@@ -108,7 +114,24 @@ public class GameController {
      */
     private long lastDropNs = 0L;
     //import Board class to user its methods
-    private final Board board  = new Board(10,22);
+    //public final Board board  = new Board(10,22);
+
+    /**
+     * all below command is reflecting user input value into game controller
+     * So now you guys can start working on reflecting user input now
+     * use
+     */
+    // Here is the collecting user input from Config class
+    //Then reflecting all information to game board by put value
+    //into board class
+    TetrisConfig config = ConfigService.get();
+    Board board = new Board(config.fieldWidth(), config.fieldHeight());
+    int gameLevel = config.gameLevel();
+    boolean musicON = config.music();
+    boolean sfxON = config.sfx();
+    boolean aiPlay = config.aiPlay();
+    boolean extendMode = config.extendMode();
+
 
 
     private Tetromino current;
@@ -294,8 +317,10 @@ private static final Color[] PALETTE = {
     Color.RED          // 7 - Z
 };
 
+
     private void render()
     {
+
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
         double cell = Math.floor(gameCanvas.getWidth() / board.w);
         double visibleHeight = cell * visibleRows;
