@@ -1,5 +1,6 @@
 //clears rows and moves the remaining tetromino down :)
 package org.oosd.model;
+import org.oosd.sound.soundEffects;
 
 import java.util.Arrays;
 
@@ -27,6 +28,7 @@ public class Board {
     }
 
     public void clearFullLines() {
+             soundEffects.play("lineclear");
         for (int row = 0; row < h; row++) {
             boolean full = true;
             for (int col = 0; col < w; col++) { //checking if each column is filled, if its not then stop checking that row.

@@ -55,6 +55,9 @@ import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
 import javafx.scene.text.Font;
+import org.oosd.sound.music;
+import org.oosd.sound.soundEffects;
+
  
 
 /**
@@ -221,6 +224,7 @@ private GraphicsContext gc;
 private void showGameOver() {
     // Stop game loop immediately
     loop.stop();
+    soundEffects.play("gameover");
 
     // Ensure gc is initialized
     if (gc == null) gc = gameCanvas.getGraphicsContext2D();
@@ -445,6 +449,13 @@ private void drawInitialScreen() {
 public void initialize() {
     gc = gameCanvas.getGraphicsContext2D();
     drawInitialScreen();
+
+    soundEffects.init(sfxON);
+
+       if (musicON) {
+        music.play("/background.mp3"); 
+    }
+
 
 
     // Set canvas to focusable and request focus

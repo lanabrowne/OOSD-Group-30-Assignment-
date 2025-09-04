@@ -1,4 +1,5 @@
 package org.oosd.model;
+import org.oosd.sound.soundEffects;
 
 /**
  * This class is setting the method of tetromino type, color, and shape
@@ -54,10 +55,16 @@ public class Tetromino extends AbstractPiece{
      * @param dc (down col) right = +1, left = -1
      * @return
      */
-    public Tetromino moved(int dr, int dc)
-    {
-        return new Tetromino(type, rotation, row + dr, col + dc);
+  public Tetromino moved(int dr, int dc) {
+    // Only play sound if moving left or right
+    if (dc != 0) {
+        soundEffects.play("move");
     }
+
+    // Return new moved instance
+    return new Tetromino(type, rotation, row + dr, col + dc);
+}
+
 
     //return rotate request and All actions will be validated
     //At controller and Board class. here is just execute action
@@ -70,7 +77,10 @@ public class Tetromino extends AbstractPiece{
      */
     public Tetromino rotated(int dir)
     {
+        soundEffects.play("rotated");
+
         return new Tetromino(type, rotation + (dir > 0 ? 1 : 3), row, col);
+        
     }
 
     //Initial position is set to center by width
