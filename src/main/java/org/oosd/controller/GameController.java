@@ -84,10 +84,6 @@ public class GameController {
     @FXML
     private Button end;  // button after game ends that goes to the HS screen
 
-
-
-
-
     /**
      * This is the number of rows that will be shown in the UI.Actual Board
      * is 22 lines but hide 2 lines to judge the game over
@@ -448,6 +444,12 @@ private void drawInitialScreen() {
    @FXML
 public void initialize() {
     gc = gameCanvas.getGraphicsContext2D();
+    // Added cell size var to be easily accessed
+    int cellSize = 30;
+    // change the gamecanvas based on config screen settings
+    gameCanvas.setWidth(config.fieldWidth()*cellSize);
+    gameCanvas.setHeight((config.fieldHeight()- hiddenRows)*cellSize);
+
     drawInitialScreen();
 
     soundEffects.init(sfxON);

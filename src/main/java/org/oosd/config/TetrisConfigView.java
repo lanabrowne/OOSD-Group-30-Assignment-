@@ -52,7 +52,7 @@ public class TetrisConfigView {
         Label label2 = new Label("Field height: (No of cells):");
         label2.setMinWidth(150);
         //Here is the user input of field height. So collect it and store into JSON file
-        Slider slider2 = new Slider(15, 30, config.fieldHeight());
+        Slider slider2 = new Slider(10, 25, config.fieldHeight());
         slider2.setShowTickLabels(true);
         slider2.setShowTickMarks(true);
         slider2.setMajorTickUnit(5);

@@ -12,7 +12,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       alignment="TOP_CENTER" spacing="10"
       fx:controller="org.oosd.controller.GameController"
-      prefWidth="400" prefHeight="600"
+      prefWidth="400" prefHeight="800"
       fx:id="frameCanvas">
 
         <Label text="Play" style="-fx-font-size: 24px;"/>
