@@ -85,13 +85,9 @@ public class GameController {
     private Button end;  // button after game ends that goes to the HS screen
 
     /**
-     * This is the number of rows that will be shown in the UI.Actual Board
-     * is 22 lines but hide 2 lines to judge the game over
-     */
-    private static final int visibleRows = 20;
-    /**
-     * This is the number of hiding lines for the spawn. SO that
-     * when i draw the UI, make up 2 lines.
+     * This is the number of hidden rows for the spawn.
+     * When the UI is drawn, two hidden rows are drawn above the board
+     * to determine game over
      */
     private static final int hiddenRows = 2;
 
@@ -323,22 +319,24 @@ private static final Color[] PALETTE = {
 
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
         double cell = Math.floor(gameCanvas.getWidth() / board.w);
+
+        int visibleRows = board.h;
         double visibleHeight = cell * visibleRows;
 
-        //Create Background colour of game screen'
+        //Create Background colour of game screen
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,gameCanvas.getWidth(), gameCanvas.getHeight());
 
         //Set Block if block hit bottom
         int[][] snap = board.snapshot();
-        for( int row = hiddenRows; row < board.h; row++)
+        for(int row = hiddenRows; row < board.h; row++)
         {
             for (int col = 0; col < board.w; col++)
             {
                 int id = snap[row][col];
                 if(id != 0)
                 {
-                    double y = (row - hiddenRows) * cell;
+                    double y = row * cell;
                     gc.setFill(PALETTE[id]);
                     gc.fillRect(col * cell, y, cell -1, cell - 1);
 
@@ -368,7 +366,7 @@ private static final Color[] PALETTE = {
         {
             gc.strokeLine(x * cell, 0, x * cell, visibleHeight);
         }
-        for(int y = 0; y<= visibleRows; y++)
+        for(int y = 0; y <= visibleRows; y++)
         {
             gc.strokeLine(0, y * cell, board.w * cell, y * cell);
         }
@@ -448,7 +446,7 @@ public void initialize() {
     int cellSize = 30;
     // change the gamecanvas based on config screen settings
     gameCanvas.setWidth(config.fieldWidth()*cellSize);
-    gameCanvas.setHeight((config.fieldHeight()- hiddenRows)*cellSize);
+    gameCanvas.setHeight(config.fieldHeight()*cellSize);
 
     drawInitialScreen();
 
