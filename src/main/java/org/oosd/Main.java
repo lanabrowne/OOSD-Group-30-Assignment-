@@ -2,30 +2,21 @@ package org.oosd;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfigView;
-import org.oosd.controller.GameController;
-import org.oosd.controller.GameScoreController;
+import org.oosd.ui.*;
 
 import java.io.IOException;
 import java.util.Optional;
 
-public class Main extends Application {
+public class Main extends Application implements Frame {
 
     /**
      * menu screen and config screen were used
@@ -44,7 +35,8 @@ public class Main extends Application {
 
     // Global Variables
     private StackPane root;
-    private static Stage primaryStage;
+    private MainScreen mainScreen;
+    //private static Stage primaryStage;
     private static Scene scene;
     private static final double fieldWidth = 500;
     private static final double fieldHeight = 750;
@@ -62,150 +54,106 @@ public class Main extends Application {
         launch(args);
     }
 
-    @Override
-    public void start(Stage stage) throws Exception {
+    private void buildScreens(){
+        mainScreen = new MainScreen(this);
+        ScreenWithGame gameScreen = new GameScreen(this);
+        ConfigScreen configScreen = new ConfigScreen(this);
+        HighScoreScreen highScoreScreen = new HighScoreScreen(this);
 
+        //main screen routes
+        mainScreen.setRoute("game", gameScreen);
+        mainScreen.setRoute("config", configScreen);
+        mainScreen.setRoute("highscores", highScoreScreen);
+        // Routes back to main
+        gameScreen.setRoute("back", mainScreen);
+        configScreen.setRoute("back", mainScreen);
+        highScoreScreen.setRoute("back", mainScreen);
+
+        // Show main screen first
+        showScreen(mainScreen);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+//      game = new Game();
         ConfigService.load();
-        primaryStage = stage;
-        // pass Stage object to splash screen class
-        buildSplashScreen(stage);
-        //Loads font for main screen
         Font.loadFont(Main.class.getResource("/fonts/Montserrat-Black.ttf").toExternalForm(), 120);
 
-    }
-
-    //Builds splash screen
-    private static void buildSplashScreen(Stage stage){
-
-        primaryStage = stage;
-        Stage splashStage = new Stage();
-        splashStage.initStyle(StageStyle.UNDECORATED);
-        splashStage.setAlwaysOnTop(true);
-
-        BorderPane splashScreen = new BorderPane();
-        splashScreen.setStyle("-fx-background-color: white;");
-
-        // load images
-        Image tetrisTopImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenTop.jpg"));
-        Image tetrisBottomImg = new Image(Main.class.getResourceAsStream("/Images/TetrisSplashScreenBottom.jpg"));
-
-        // Top banner
-        ImageView topImg = new ImageView(tetrisTopImg);
-        topImg.setPreserveRatio(true);
-        splashScreen.setTop(topImg);
-        BorderPane.setAlignment(topImg, Pos.CENTER);
-
-        // Bottom banner
-        ImageView bottomImg = new ImageView(tetrisBottomImg);
-        bottomImg.setPreserveRatio(true);
-        splashScreen.setBottom(bottomImg);
-        BorderPane.setAlignment(bottomImg, Pos.CENTER);
-
-        // Group information text in centre of screen
-        VBox textBox = new VBox(10);
-        textBox.setAlignment(Pos.CENTER);
-        Text groupInfo = new Text(
-                "Group ID: PG 30\n" +
-                        "Members:\n" +
-                        "s5340293, Lana Browne, 2805ICT\n" +
-                        "s5350825, Taylor Brown, 2006ICT\n" +
-                        "s5404819, Ria Rajesh, 2006ICT\n" +
-                        "s5339308, Ikkei Fukuta, 2006ICT\n" +
-                        "s5373939, Kosuke Sato, 2006ICT"
-        );
-        groupInfo.setStyle("-fx-fill: black; -fx-font-size: 22px;");
-        textBox.getChildren().add(groupInfo);
-        splashScreen.setCenter(textBox);
-
-        // Scene and show
-        Scene splashScene = new Scene(splashScreen, fieldWidth, fieldHeight);
-        topImg.fitWidthProperty().bind(splashScene.widthProperty());
-        bottomImg.fitWidthProperty().bind(splashScene.widthProperty());
-
-        splashStage.setScene(splashScene);
-        splashStage.centerOnScreen();
-        splashStage.show();
-
-        // Simulate loading task (keep as-is)
-        Task<Void> loadTask = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                Thread.sleep(4000);
-                return null;
-            }
-            @Override
-            protected void succeeded() {
-                Platform.runLater(() -> {
-                    splashStage.close();
-                    initializeMenuScreen();
-                });
-            }
-        };
-        new Thread(loadTask).start();
-
-    }
-
-
-
-    public static void initializeMenuScreen()
-    {
-
-
-        Parent menu = menuForm();
-        scene = new Scene(menu, fieldWidth, fieldHeight);
+        // Creates root of application
+        root = new StackPane();
+        Scene scene = new Scene(root, fieldWidth, fieldHeight);
         scene.getStylesheets().add(Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
-        // adds title
-        primaryStage.setScene(scene);
         primaryStage.setTitle("Tetris");
-        // creates the overall box
+        primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
         primaryStage.show();
+
+        // Show splash screen first, then build main menu
+        SplashScreen.show(primaryStage, this::buildScreens, fieldWidth, fieldHeight);
+
+        primaryStage.setOnCloseRequest(event ->{
+            event.consume();
+            showExitConfirmation();
+        });
+
+
+
     }
+
+    public void showScreen(Screen scr){
+        root.getChildren().setAll(scr.getScreen());
+    }
+
+    public MainScreen getMainScreen(){
+        return mainScreen;
+    }
+
+
+
+
+
+//    public static void initializeMenuScreen()
+//    {
+//
+//
+//        Parent menu = menuForm();
+//        scene = new Scene(menu, fieldWidth, fieldHeight);
+//        scene.getStylesheets().add(Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
+//        // adds title
+//        primaryStage.setScene(scene);
+//        primaryStage.setTitle("Tetris");
+//        // creates the overall box
+//        primaryStage.show();
+//    }
 
     /**
      * This method shows menu screen when application is executed.
      * by using static void, we can call this method from another class and
      * event to back to this screen from another screen.
      */
-    public static void showMainScreen() {
-        // Moved design code of menu screen to another method to set root f
-        // Use scene.setRoot command to switch the screen to menu screen.
-        scene.setRoot(menuForm());
-    }
+//    public static void showMainScreen() {
+//        // Moved design code of menu screen to another method to set root f
+//        // Use scene.setRoot command to switch the screen to menu screen.
+//        scene.setRoot(menuForm());
+//    }
 
     /**
      * This method is also showing config screen when user clicked
      * config button from menu UI. This method should be private not to be used
      * at another class.
      */
-    private static void showConfigScreen() {
-        TetrisConfigView view = new TetrisConfigView();
-        // using VBox to design of config screen
-        Parent root = view.buildConfigRoot(() -> showMainScreen());
-        // switch to config screen from menu screen using by root
-        scene.setRoot(root);
-    }
+//    private static void showConfigScreen() {
+//    TetrisConfigView view = new TetrisConfigView();
+//    // using VBox to design of config screen
+//        Parent root = view.buildConfigRoot(() -> main.showScreen(main.getMainScreen()));
+//        // switch to config screen from menu screen using by root
+//        scene.setRoot(root);
+//    }
 
     /**
      * This method is open the tetris game screen read by fxml file
      */
-    private static void showGameScreen() {
-        try {
-            // read fxml file (design of game screen) used by FXML Loader command
-            FXMLLoader loader = new FXMLLoader(Main.class.getResource("/org.oosd/fxml/GameScreen.fxml"));
-            // Load the file and convert to parent node
-            Parent game = loader.load();
-            // and to valid functions, obtain the controller which is related to this fxml
-            // file
-            // (GameController) --> then we can control all operations.
-            GameController gc = loader.getController();
-            // show the read game screen into UI
-            scene.setRoot(game);
 
-        } catch (IOException ex) {
-            // Just show the error log when reading file was failed.
-            ex.printStackTrace();
-        }
-    }
 
     /**
      * This is the method that showing game score screen.
@@ -228,66 +176,10 @@ public class Main extends Application {
         }
     }
 
-    /**
-     * This method is just for the menu form design that located at show menu
-     * screen.
-     * this needed to be replaced to another method to use root navigation
-     * management.
-     * 
-     * @return
-     */
-    private static Parent menuForm() {
-        VBox mainScreen = new VBox(10);
-        // add background images css
-        mainScreen.getStyleClass().add("wrapper");
-        mainScreen.setAlignment(Pos.CENTER);
-        // Title
-        Label title = new Label("Tetris");
-        title.getStyleClass().add("title");
-        //title.setStyle("-fx-font-size: 36px; -fx-font-weight: bold;");
-
-        // Buttons
-        Button btn = new Button("Click Me");
-        Button gameButton = new Button("Play Game");
-        Button confButton = new Button("Configurations");
-        Button highScoresButton = new Button("High Scores");
-        Button exitButton = new Button("Exit");
-
-        // button functionality
-        confButton.setOnAction(e -> showConfigScreen());
-        gameButton.setOnAction(e -> showGameScreen());
-        highScoresButton.setOnAction(e -> showHighScoreScreen());
-        /*
-        when back is pressed, if it is pressed on the menu screen-
-        a confirmation screen will appear yes -> leaves game no -> nothing happens
-        if the back button is pressed on any other screen,
-        the player will return to the main screen
-         */
-        exitButton.setOnAction(e -> {
-            if (confirmExit()){
-                Platform.exit();
-            } else {
-                showMainScreen();
-            }
-        });
-
-        // sets the button sizes
-        gameButton.setPrefWidth(200);
-        confButton.setPrefWidth(200);
-        exitButton.setPrefWidth(200);
-        highScoresButton.setPrefWidth(200);
-
-        // Load a background image??
-
-        // links buttons to screen
-        mainScreen.getChildren().addAll(title, gameButton, confButton, highScoresButton, exitButton);
-        return mainScreen;
-    }
 
 
-
-
-    public static boolean confirmExit() {
+    @Override
+    public void showExitConfirmation() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Exit Confirmation");
         alert.setHeaderText("Confirm Exit");
@@ -298,6 +190,9 @@ public class Main extends Application {
         alert.getButtonTypes().setAll(yesButton, noButton);
 
         Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == yesButton;
+        if(result.isPresent() && result.get() == yesButton){
+            System.exit(0);
+        }
+        //return result.isPresent() && result.get() == yesButton;
     }
 }
