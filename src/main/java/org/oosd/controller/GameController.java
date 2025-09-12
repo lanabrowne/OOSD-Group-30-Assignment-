@@ -56,6 +56,7 @@ import javafx.scene.text.Font;
 import org.oosd.sound.music;
 import org.oosd.sound.soundEffects;
 import org.oosd.ui.Frame;
+import org.oosd.ui.HighScoreScreen;
 
 
 /**
@@ -574,11 +575,12 @@ public void backClicked(ActionEvent e)
   loop.stop();
   parent.showExitConfirmation();
 }
-//    public void endClicked(ActionEvent e)
-//    {
-//        loop.stop();
-//
-//        Main.showHighScoreScreen();
-//
-//    }
+    public void endClicked(ActionEvent e)
+    {
+        loop.stop();
+        // Show highscore screen via frame
+        HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
+        parent.showScreen(highScoreScreen);
+
+    }
 }

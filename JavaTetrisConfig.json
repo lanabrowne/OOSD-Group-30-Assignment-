@@ -1,8 +1,8 @@
 {
-  "fieldWidth": 15,
+  "fieldWidth": 10,
   "music": true,
   "sfx": true,
-  "fieldHeight": 19,
+  "fieldHeight": 25,
   "gameLevel": 6,
   "extendMode": true,
   "aiPlay": true

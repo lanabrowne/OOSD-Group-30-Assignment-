@@ -56,21 +56,27 @@ public class Main extends Application implements Frame {
 
     private void buildScreens(){
         mainScreen = new MainScreen(this);
-        ScreenWithGame gameScreen = new GameScreen(this);
+//        ScreenWithGame gameScreen = new GameScreen(this);
         ConfigScreen configScreen = new ConfigScreen(this);
         HighScoreScreen highScoreScreen = new HighScoreScreen(this);
 
         //main screen routes
-        mainScreen.setRoute("game", gameScreen);
+        mainScreen.setRoute("game", null); // placeholder, handled dynamically
         mainScreen.setRoute("config", configScreen);
         mainScreen.setRoute("highscores", highScoreScreen);
         // Routes back to main
-        gameScreen.setRoute("back", mainScreen);
+//        gameScreen.setRoute("back", mainScreen);
         configScreen.setRoute("back", mainScreen);
         highScoreScreen.setRoute("back", mainScreen);
 
         // Show main screen first
         showScreen(mainScreen);
+    }
+
+    public void showNewGame() {
+        GameScreen newGame = new GameScreen(this);
+        newGame.setRoute("back", mainScreen);
+        showScreen(newGame);
     }
 
     @Override

@@ -7,11 +7,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.Node;
+import org.oosd.Main;
 
 public class MainScreen implements Screen {
 
     private VBox mainScreen;
-    private Screen configScreen, gameScreen, highScoreScreen;
+    private Screen configScreen, highScoreScreen;
     private Frame parent;
 
     @Override
@@ -21,7 +22,6 @@ public class MainScreen implements Screen {
     public void setRoute(String path, Screen screen){
         switch (path) {
             case "config" -> configScreen = screen;
-            case "game" -> gameScreen = screen;
             case "highscores" -> highScoreScreen = screen;
             default -> {
             }
@@ -52,12 +52,13 @@ public class MainScreen implements Screen {
 
         // button functionality
         confButton.setOnAction(e -> parent.showScreen(configScreen));
-        gameButton.setOnAction(e -> parent.showScreen(gameScreen));
-        //start game if gamescreen has been switched to
-        if(gameScreen instanceof GameScreen gs){
-            Platform.runLater(gs::onShow); // starts/resets game loop
-        }
+        gameButton.setOnAction(e -> {
+            if (parent instanceof Main m) {
+                m.showNewGame(); // calls the helper in Main that builds a new GameScreen
+            }
+        });
         highScoresButton.setOnAction(e -> parent.showScreen(highScoreScreen));
+        exitButton.setOnAction(e-> parent.showExitConfirmation());
         /*
         when back is pressed, if it is pressed on the menu screen-
         a confirmation screen will appear yes -> leaves game no -> nothing happens
