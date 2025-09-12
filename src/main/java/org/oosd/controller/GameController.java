@@ -29,10 +29,10 @@
 
 
 package org.oosd.controller;
+import javafx.event.ActionEvent;
 import javafx.scene.text.Text;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -46,8 +46,6 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 
-import java.util.Arrays;
-
 import org.oosd.Main;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
@@ -57,8 +55,9 @@ import org.oosd.model.TetrominoType;
 import javafx.scene.text.Font;
 import org.oosd.sound.music;
 import org.oosd.sound.soundEffects;
+import org.oosd.ui.Frame;
+import org.oosd.ui.HighScoreScreen;
 
- 
 
 /**
  * This class is controller class to control the tetris game.This class maintains
@@ -67,6 +66,7 @@ import org.oosd.sound.soundEffects;
  * by bind key entry in the scene.
  * And making design of canvas (set 2 rows invisible to judge for game over)
  */
+
 
 public class GameController {
     @FXML
@@ -77,6 +77,10 @@ public class GameController {
 
     @FXML
     private Button btnBack;
+    public Button getBtnBack(){
+        return btnBack;
+    }
+
 
      @FXML
     private Label lblGameOver;
@@ -84,12 +88,10 @@ public class GameController {
     @FXML
     private Button end;  // button after game ends that goes to the HS screen
 
-    /**
-     * This is the number of hidden rows for the spawn.
-     * When the UI is drawn, two hidden rows are drawn above the board
-     * to determine game over
-     */
-    private static final int hiddenRows = 2;
+  
+    private static final int visibleRows = 30;
+    
+    private static final int hiddenRows = 4;
 
     /**
      * This is definition of free fall speed standard interval.When user
@@ -468,6 +470,10 @@ public void initialize() {
 
         // Key pressed
         sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            if(current == null){
+                startGame();
+                return;
+            }
             switch (e.getCode()) {
                 case LEFT -> {
                     if (tryMove(0, -1)) render();
@@ -491,9 +497,6 @@ public void initialize() {
         });
     });
 
-    // Spawn first Tetromino and start the game loop
-    spawnFirst();
-    loop.start();
 }
 
 // Class-level paused flag
@@ -510,6 +513,30 @@ private void togglePause() {
         pauseGame();
     }
 }
+public void startGame(){
+    // Spawn first Tetromino and start the game loop
+    resetGame();
+    spawnFirst();
+    loop.start();
+}
+
+    public void resetGame() {
+        // Stop current game loop
+        loop.stop();
+
+        // Reset board
+        //board.clear();   // assuming your Board class has a clear() method
+        current = null;
+        next = null;
+        downPressed = false;
+        lastDropNs = 0L;
+
+        // Clear canvas
+        if (gc != null) {
+            gc.clearRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+            drawInitialScreen();
+        }
+    }
 
 private void pauseGame() {
     loop.stop();
@@ -534,25 +561,22 @@ private void resumeGame() {
     render(); // clears the overlay by redrawing board
 }
 
-Main main = new Main();
+private Frame parent;
+public void setParent(Frame parent) {
+    this.parent = parent;
+}
 @FXML
-
-public void backClicked(ActionEvent e) 
+public void backClicked(ActionEvent e)
 {
   loop.stop();
-
-  if (Main.confirmExit()) {
-      Platform.exit();
-  } else {
-      Main.showMainScreen();
-  }
- 
+  parent.showExitConfirmation();
 }
     public void endClicked(ActionEvent e)
     {
         loop.stop();
-
-        Main.showHighScoreScreen();
+        // Show highscore screen via frame
+        HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
+        parent.showScreen(highScoreScreen);
 
     }
 }

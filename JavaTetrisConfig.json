@@ -3,7 +3,7 @@
   "music": true,
   "sfx": true,
   "fieldHeight": 25,
-  "gameLevel": 2,
-  "extendMode": false,
+  "gameLevel": 6,
+  "extendMode": true,
   "aiPlay": true
 }
