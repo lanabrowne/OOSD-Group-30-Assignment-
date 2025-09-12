@@ -40,7 +40,7 @@ public final class ConfigService {
                JSONObject object = new JSONObject(json);
 
                 currentConfig = new TetrisConfig(
-                        object.optInt("filedWidth", 10),
+                        object.optInt("fieldWidth", 10),
                         object.optInt("fieldHeight", 20),
                         object.optInt("gameLevel", 5),
                         object.optBoolean("music", false),
