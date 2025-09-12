@@ -1,30 +1,30 @@
 /****************************************************************
  PROGRAM:   Game Controller for Tetris
- AUTHORS:   Ikkei Fukuta, Ria Rajesh, Taylor Brown, 
-            Lana Browne, Kosuke Suto
+ AUTHORS:   Ikkei Fukuta, Ria Rajesh, Taylor Brown,
+ Lana Browne, Kosuke Suto
 
  STUDENT ID: s5339308, s5404819, s350825, s5340293, s5373939
  DUE DATE:   27th Aug 2025
 
- FUNCTION: 
-    This class controls the Tetris game. It manages the game 
-    board, the current and next tetrominoes, and user inputs. 
-    It also handles gravity, movement, rotation, soft drop, 
-    fast drop, pause/resume, and game over detection. 
-    Additionally, it renders the game state onto the canvas.
+ FUNCTION:
+ This class controls the Tetris game. It manages the game
+ board, the current and next tetrominoes, and user inputs.
+ It also handles gravity, movement, rotation, soft drop,
+ fast drop, pause/resume, and game over detection.
+ Additionally, it renders the game state onto the canvas.
 
- INPUT:  
-    User keyboard input (arrow keys, P key).
-    Loaded from: GitHub\OOSD-Group-30-Assignment-
+ INPUT:
+ User keyboard input (arrow keys, P key).
+ Loaded from: GitHub\OOSD-Group-30-Assignment-
 
- OUTPUT: 
-    Visual game rendering on the JavaFX Canvas.
-    Game over screen and pause overlay.
+ OUTPUT:
+ Visual game rendering on the JavaFX Canvas.
+ Game over screen and pause overlay.
 
- NOTES:  
-    - The board has 22 rows, with the top 2 hidden for spawning. 
-    - Game loop is handled via JavaFX AnimationTimer.
-    - Designed for integration with the Main application class.
+ NOTES:
+ - The board has 22 rows, with the top 2 hidden for spawning.
+ - Game loop is handled via JavaFX AnimationTimer.
+ - Designed for integration with the Main application class.
  ****************************************************************/
 
 
@@ -82,15 +82,21 @@ public class GameController {
     }
 
 
-     @FXML
+    @FXML
     private Label lblGameOver;
 
     @FXML
     private Button end;  // button after game ends that goes to the HS screen
 
-  
+    /**
+     * This is the number of rows that will be shown in the UI.Actual Board
+     * is 22 lines but hide 2 lines to judge the game over
+     */
     private static final int visibleRows = 30;
-    
+    /**
+     * This is the number of hiding lines for the spawn. SO that
+     * when i draw the UI, make up 2 lines.
+     */
     private static final int hiddenRows = 4;
 
     /**
@@ -103,7 +109,7 @@ public class GameController {
      * set false as default and when user pressed down key, it will be true.
      */
     private boolean downPressed = false;
-   
+
 
     /**
      * The time of last drop execution.Measure the interval by comparing
@@ -138,7 +144,7 @@ public class GameController {
      * This is the main loop and this is called every frame. Calling the stepGravity
      * method by current drop
      */
-private GraphicsContext gc;
+    private GraphicsContext gc;
     private final AnimationTimer loop = new AnimationTimer() {
         @Override
         public void handle(long now) {
@@ -211,54 +217,54 @@ private GraphicsContext gc;
         if(!spawnNext())
         {
             loop.stop();
-        showGameOver();
+            showGameOver();
         }
-     
+
     }
-private void showGameOver() {
-    // Stop game loop immediately
-    loop.stop();
-    soundEffects.play("gameover");
+    private void showGameOver() {
+        // Stop game loop immediately
+        loop.stop();
+        soundEffects.play("gameover");
 
-    // Ensure gc is initialized
-    if (gc == null) gc = gameCanvas.getGraphicsContext2D();
+        // Ensure gc is initialized
+        if (gc == null) gc = gameCanvas.getGraphicsContext2D();
 
-    // Use Platform.runLater to make sure drawing happens on the FX Application Thread
-    Platform.runLater(() -> {
-        double canvasWidth = gameCanvas.getWidth();
-        double canvasHeight = gameCanvas.getHeight();
+        // Use Platform.runLater to make sure drawing happens on the FX Application Thread
+        Platform.runLater(() -> {
+            double canvasWidth = gameCanvas.getWidth();
+            double canvasHeight = gameCanvas.getHeight();
 
-         Stop[] stops = new Stop[] {
-            new Stop(0, Color.rgb(0, 0, 0, 0.8)),    // Top: dark, almost black
-            new Stop(1, Color.rgb(255, 0, 0, 0.8))   // Bottom: dark red
-        };
-        LinearGradient lg = new LinearGradient(
-            0, 0, 0, 1, // startX, startY, endX, endY (0-1 normalized)
-            true,        // proportional
-            CycleMethod.NO_CYCLE,
-            stops
-        );
-          gc.setFill(lg);
-        gc.fillRect(0, 0, canvasWidth, canvasHeight);
+            Stop[] stops = new Stop[] {
+                    new Stop(0, Color.rgb(0, 0, 0, 0.8)),    // Top: dark, almost black
+                    new Stop(1, Color.rgb(255, 0, 0, 0.8))   // Bottom: dark red
+            };
+            LinearGradient lg = new LinearGradient(
+                    0, 0, 0, 1, // startX, startY, endX, endY (0-1 normalized)
+                    true,        // proportional
+                    CycleMethod.NO_CYCLE,
+                    stops
+            );
+            gc.setFill(lg);
+            gc.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Centered "GAME OVER" text
-        gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("Arial", 36));
+            // Centered "GAME OVER" text
+            gc.setFill(Color.WHITE);
+            gc.setFont(Font.font("Arial", 36));
 
-        String message = "GAME OVER";
-        Text tempText = new Text(message);
-        tempText.setFont(Font.font("Arial", 36));
-        double textWidth = tempText.getLayoutBounds().getWidth();
-        double textHeight = tempText.getLayoutBounds().getHeight();
+            String message = "GAME OVER";
+            Text tempText = new Text(message);
+            tempText.setFont(Font.font("Arial", 36));
+            double textWidth = tempText.getLayoutBounds().getWidth();
+            double textHeight = tempText.getLayoutBounds().getHeight();
 
-        gc.fillText(message, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight) / 2);
-        Button end;
-    });
-}
+            gc.fillText(message, (canvasWidth - textWidth) / 2, (canvasHeight + textHeight) / 2);
+            Button end;
+        });
+    }
 
 
 
-   
+
     /**
      *
      * @param dr --> row difference (down + 1)
@@ -304,16 +310,16 @@ private void showGameOver() {
      */
 // Palette of colors for tetromino IDs
 // Index 0 is empty (no block)
-private static final Color[] PALETTE = {
-    Color.TRANSPARENT, // 0 - empty cell
-    Color.CYAN,        // 1 - I
-    Color.BLUE,        // 2 - J
-    Color.ORANGE,      // 3 - L
-    Color.YELLOW,      // 4 - O
-    Color.GREEN,       // 5 - S
-    Color.PURPLE,      // 6 - T
-    Color.RED          // 7 - Z
-};
+    private static final Color[] PALETTE = {
+            Color.TRANSPARENT, // 0 - empty cell
+            Color.CYAN,        // 1 - I
+            Color.BLUE,        // 2 - J
+            Color.ORANGE,      // 3 - L
+            Color.YELLOW,      // 4 - O
+            Color.GREEN,       // 5 - S
+            Color.PURPLE,      // 6 - T
+            Color.RED          // 7 - Z
+    };
 
 
     private void render()
@@ -321,24 +327,22 @@ private static final Color[] PALETTE = {
 
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
         double cell = Math.floor(gameCanvas.getWidth() / board.w);
-
-        int visibleRows = board.h;
         double visibleHeight = cell * visibleRows;
 
-        //Create Background colour of game screen
+        //Create Background colour of game screen'
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,gameCanvas.getWidth(), gameCanvas.getHeight());
 
         //Set Block if block hit bottom
         int[][] snap = board.snapshot();
-        for(int row = hiddenRows; row < board.h; row++)
+        for( int row = hiddenRows; row < board.h; row++)
         {
             for (int col = 0; col < board.w; col++)
             {
                 int id = snap[row][col];
                 if(id != 0)
                 {
-                    double y = row * cell;
+                    double y = (row - hiddenRows) * cell;
                     gc.setFill(PALETTE[id]);
                     gc.fillRect(col * cell, y, cell -1, cell - 1);
 
@@ -368,7 +372,7 @@ private static final Color[] PALETTE = {
         {
             gc.strokeLine(x * cell, 0, x * cell, visibleHeight);
         }
-        for(int y = 0; y <= visibleRows; y++)
+        for(int y = 0; y<= visibleRows; y++)
         {
             gc.strokeLine(0, y * cell, board.w * cell, y * cell);
         }
@@ -418,107 +422,107 @@ private static final Color[] PALETTE = {
      * Set initialized and start playing game.
      * Showing the first block and loop will be started.
      */
-private void drawInitialScreen() {
-    if (gc == null) gc = gameCanvas.getGraphicsContext2D();
+    private void drawInitialScreen() {
+        if (gc == null) gc = gameCanvas.getGraphicsContext2D();
 
-    double w = gameCanvas.getWidth();
-    double h = gameCanvas.getHeight();
+        double w = gameCanvas.getWidth();
+        double h = gameCanvas.getHeight();
 
-    // Background
-    gc.setFill(Color.BLACK);
-    gc.fillRect(0, 0, w, h);
+        // Background
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, w, h);
 
-    // Title
-    gc.setFill(Color.WHITE);
-    gc.setFont(Font.font(28));
-    String title = "TETRIS";
-    gc.fillText(title, (w - title.length() * 14) / 2, h * 0.35);
+        // Title
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font(28));
+        String title = "TETRIS";
+        gc.fillText(title, (w - title.length() * 14) / 2, h * 0.35);
 
-    // Hint text
-    gc.setFont(Font.font(16));
-    gc.fillText("← → move   ↑ rotate   ↓ soft drop   P pause",
-            (w * 0.5) - 170, h * 0.50);
-    gc.fillText("Press any arrow key to start", (w * 0.5) - 120, h * 0.60);
-}
-
-   @FXML
-public void initialize() {
-    gc = gameCanvas.getGraphicsContext2D();
-    // Added cell size var to be easily accessed
-    int cellSize = 30;
-    // change the gamecanvas based on config screen settings
-    gameCanvas.setWidth(config.fieldWidth()*cellSize);
-    gameCanvas.setHeight(config.fieldHeight()*cellSize);
-
-    drawInitialScreen();
-
-    soundEffects.init(sfxON);
-
-       if (musicON) {
-        music.play("/background.mp3"); 
+        // Hint text
+        gc.setFont(Font.font(16));
+        gc.fillText("← → move   ↑ rotate   ↓ soft drop   P pause",
+                (w * 0.5) - 170, h * 0.50);
+        gc.fillText("Press any arrow key to start", (w * 0.5) - 120, h * 0.60);
     }
 
+    @FXML
+    public void initialize() {
+        gc = gameCanvas.getGraphicsContext2D();
+        // Added cell size var to be easily accessed
+        int cellSize = 30;
+        // change the gamecanvas based on config screen settings
+        gameCanvas.setWidth(config.fieldWidth()*cellSize);
+        gameCanvas.setHeight((config.fieldHeight()- hiddenRows)*cellSize);
+
+        drawInitialScreen();
+
+        soundEffects.init(sfxON);
+
+        if (musicON) {
+            music.play("/background.mp3");
+        }
 
 
-    // Set canvas to focusable and request focus
-    gameCanvas.setFocusTraversable(true);
-    Platform.runLater(() -> gameCanvas.requestFocus());
 
-    // Key event handling
-    gameCanvas.sceneProperty().addListener((obs, oldSc, sc) -> {
-        if (sc == null) return;
+        // Set canvas to focusable and request focus
+        gameCanvas.setFocusTraversable(true);
+        Platform.runLater(() -> gameCanvas.requestFocus());
 
-        // Key pressed
-        sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            if(current == null){
-                startGame();
-                return;
-            }
-            switch (e.getCode()) {
-                case LEFT -> {
-                    if (tryMove(0, -1)) render();
+        // Key event handling
+        gameCanvas.sceneProperty().addListener((obs, oldSc, sc) -> {
+            if (sc == null) return;
+
+            // Key pressed
+            sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+                if(current == null){
+                    startGame();
+                    return;
                 }
-                case RIGHT -> {
-                    if (tryMove(0, 1)) render();
+                switch (e.getCode()) {
+                    case LEFT -> {
+                        if (tryMove(0, -1)) render();
+                    }
+                    case RIGHT -> {
+                        if (tryMove(0, 1)) render();
+                    }
+                    case UP -> {
+                        if (tryRotate(1)) render();
+                    }
+                    case DOWN -> downPressed = true;
+                    case P -> togglePause();
                 }
-                case UP -> {
-                    if (tryRotate(1)) render();
+            });
+
+            // Key released
+            sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
+                if (e.getCode() == KeyCode.DOWN) {
+                    downPressed = false;
                 }
-                case DOWN -> downPressed = true;
-                case P -> togglePause();
-            }
+            });
         });
 
-        // Key released
-        sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
-            if (e.getCode() == KeyCode.DOWN) {
-                downPressed = false;
-            }
-        });
-    });
-
-}
-
-// Class-level paused flag
-// Class-level paused flag
-private boolean paused = false;
-
-
-
-// Display pause overlay
-private void togglePause() {
-    if (paused) {
-        resumeGame();
-    } else {
-        pauseGame();
     }
-}
-public void startGame(){
-    // Spawn first Tetromino and start the game loop
-    resetGame();
-    spawnFirst();
-    loop.start();
-}
+
+    // Class-level paused flag
+// Class-level paused flag
+    private boolean paused = false;
+
+
+
+    // Display pause overlay
+    private void togglePause() {
+        if (paused) {
+            resumeGame();
+        } else {
+            pauseGame();
+        }
+    }
+    public void startGame(){
+        // Spawn first Tetromino and start the game loop
+        resetGame();
+        spawnFirst();
+        loop.start();
+    }
 
     public void resetGame() {
         // Stop current game loop
@@ -538,39 +542,39 @@ public void startGame(){
         }
     }
 
-private void pauseGame() {
-    loop.stop();
-    paused = true;
+    private void pauseGame() {
+        loop.stop();
+        paused = true;
 
-    double canvasWidth = gameCanvas.getWidth();
-    double canvasHeight = gameCanvas.getHeight();
+        double canvasWidth = gameCanvas.getWidth();
+        double canvasHeight = gameCanvas.getHeight();
 
-    // Semi-transparent dark overlay
-    gc.setFill(Color.rgb(0, 0, 0, 0.7));
-    gc.fillRect(0, 0, canvasWidth, canvasHeight);
+        // Semi-transparent dark overlay
+        gc.setFill(Color.rgb(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    // Centered PAUSED text
-    gc.setFill(Color.WHITE);
-    gc.setFont(Font.font(36));
-    gc.fillText("PAUSED", canvasWidth / 2 - 60, canvasHeight / 2);
-}
+        // Centered PAUSED text
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font(36));
+        gc.fillText("PAUSED", canvasWidth / 2 - 60, canvasHeight / 2);
+    }
 
-private void resumeGame() {
-    paused = false;
-    loop.start();
-    render(); // clears the overlay by redrawing board
-}
+    private void resumeGame() {
+        paused = false;
+        loop.start();
+        render(); // clears the overlay by redrawing board
+    }
 
-private Frame parent;
-public void setParent(Frame parent) {
-    this.parent = parent;
-}
-@FXML
-public void backClicked(ActionEvent e)
-{
-  loop.stop();
-  parent.showExitConfirmation();
-}
+    private Frame parent;
+    public void setParent(Frame parent) {
+        this.parent = parent;
+    }
+    @FXML
+    public void backClicked(ActionEvent e)
+    {
+        loop.stop();
+        parent.showExitConfirmation();
+    }
     public void endClicked(ActionEvent e)
     {
         loop.stop();
