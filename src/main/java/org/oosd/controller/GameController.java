@@ -92,10 +92,10 @@ public class GameController {
      * This is the number of rows that will be shown in the UI.Actual Board
      * is 22 lines but hide 2 lines to judge the game over
      */
-    private static final int visibleRows = 30;
+    //private static final int visibleRows = 30;
     /**
      * This is the number of hiding lines for the spawn. SO that
-     * when i draw the UI, make up 2 lines.
+     * when i draw the UI, make up 4 lines.
      */
     private static final int hiddenRows = 4;
 
@@ -134,7 +134,6 @@ public class GameController {
     boolean sfxON = config.sfx();
     boolean aiPlay = config.aiPlay();
     boolean extendMode = config.extendMode();
-
 
 
     private Tetromino current;
@@ -327,6 +326,8 @@ public class GameController {
 
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
         double cell = Math.floor(gameCanvas.getWidth() / board.w);
+
+        int visibleRows = board.h - hiddenRows;
         double visibleHeight = cell * visibleRows;
 
         //Create Background colour of game screen'
@@ -529,7 +530,6 @@ public class GameController {
         loop.stop();
 
         // Reset board
-        //board.clear();   // assuming your Board class has a clear() method
         current = null;
         next = null;
         downPressed = false;

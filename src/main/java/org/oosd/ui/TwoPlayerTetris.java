@@ -1,6 +1,7 @@
 package org.oosd.ui;
 
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.input.KeyCode;
@@ -10,21 +11,36 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.scene.Parent;
+
+import org.oosd.config.ConfigService;
+import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
-import javafx.scene.Parent;
 
 public class TwoPlayerTetris extends BorderPane implements Screen {
 
-    private final Board boardLeft;
-    private final Board boardRight;
+    TetrisConfig config = ConfigService.get();
+    int gameLevel = config.gameLevel();
+    boolean musicON = config.music();
+    boolean sfxON = config.sfx();
+    boolean aiPlay = config.aiPlay();
+    boolean extendMode = config.extendMode();
+
+    Board boardLeft = new Board(config.fieldWidth(), config.fieldHeight());;
+    Board boardRight = new Board(config.fieldWidth(), config.fieldHeight());;
 
     private Tetromino currentPieceLeft;
     private Tetromino currentPieceRight;
-    private Tetromino nextPiece;
+
+    private Tetromino nextPieceLeft;
+    private Tetromino nextPieceRight;
 
     private final Text scoreLeft = new Text("Score: 0");
     private final Text scoreRight = new Text("Score: 0");
+
+    private VBox leftColumn;
+    private VBox rightColumn;
 
     private long lastTickLeft = 0;
     private long lastTickRight = 0;
@@ -32,6 +48,10 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
     private AnimationTimer timer;
     private Frame parentFrame;
+
+    private void tickLeft() {tick(boardLeft, true);}
+    private void tickRight() {tick(boardRight, false);}
+
 
     public TwoPlayerTetris(Frame frame) {
         this.parentFrame = frame;
@@ -42,11 +62,11 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         scoreLeft.setFont(Font.font(18));
         scoreRight.setFont(Font.font(18));
 
-        VBox leftColumn = new VBox(8, scoreLeft, renderBoard(boardLeft, null));
+        leftColumn = new VBox(8, scoreLeft, renderBoard(boardLeft, null));
         leftColumn.setAlignment(Pos.CENTER);
         leftColumn.setPadding(new Insets(8));
 
-        VBox rightColumn = new VBox(8, scoreRight, renderBoard(boardRight, null));
+        rightColumn = new VBox(8, scoreRight, renderBoard(boardRight, null));
         rightColumn.setAlignment(Pos.CENTER);
         rightColumn.setPadding(new Insets(8));
 
@@ -57,9 +77,11 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
 
-        spawnNewPiece();
+        initialSpawnBoth();
         renderAllBoards();
         setupTimer();
+
+        Platform.runLater(this::requestFocus);
     }
 
     private void setupTimer() {
@@ -69,15 +91,15 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
                 if (lastTickLeft == 0) lastTickLeft = now;
                 if (lastTickRight == 0) lastTickRight = now;
 
-                long elapsedLeft = (now - lastTickLeft) / 1_000_000;
-                long elapsedRight = (now - lastTickRight) / 1_000_000;
+                long elapsedLeft = (now - lastTickLeft) / 1_000_000L;
+                long elapsedRight = (now - lastTickRight) / 1_000_000L;
 
                 if (elapsedLeft >= dropIntervalMs) {
-                    tick(boardLeft, currentPieceLeft);
+                    tickLeft();
                     lastTickLeft = now;
                 }
                 if (elapsedRight >= dropIntervalMs) {
-                    tick(boardRight, currentPieceRight);
+                    tickRight();
                     lastTickRight = now;
                 }
             }
@@ -85,80 +107,124 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         timer.start();
     }
 
-    private void tick(Board board, Tetromino piece) {
-        boolean landed = !board.canPlace(piece.moved(1, 0));
+    private void tick(Board board, boolean isLeft) {
+        Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
+        if (piece == null) return;
 
-        if (!landed) piece.row++;
-        else {
+        Tetromino down = piece.moved(1,0);
+        boolean landed = !board.canPlace(down);
+
+        if (!landed){
+            piece = down;
+        } else {
             board.lock(piece);
-            int linesCleared = clearLines(board);
+            int linesCleared = board.clearFullLines();
             // Optional: send garbage to other board if desired
-            if (board == boardLeft) {
-                if (!board.canPlace(currentPieceLeft)) endGame("Player 2 Wins!");
-            } else {
-                if (!board.canPlace(currentPieceRight)) endGame("Player 1 Wins!");
+
+            piece = spawnFor(board);
+
+            if (!board.canPlace(piece)) {
+                endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
+                return;
             }
-            spawnNewPiece(); // spawn new synchronized piece
         }
+
+        if (isLeft) currentPieceLeft = piece;
+        else currentPieceRight = piece;
 
         updateScores();
         renderAllBoards();
     }
 
-    private void spawnNewPiece() {
-        if (nextPiece == null) nextPiece = Tetromino.random(boardLeft.w);
+   private void initialSpawnBoth(){
+        currentPieceLeft = spawnFor(boardLeft);
+        currentPieceRight = spawnFor(boardRight);
+   }
 
-        currentPieceLeft = nextPiece.copy();
-        currentPieceRight = nextPiece.copy();
-
-        currentPieceLeft.row = 0;
-        currentPieceLeft.col = boardLeft.w / 2 - 1;
-
-        currentPieceRight.row = 0;
-        currentPieceRight.col = boardRight.w / 2 - 1;
-
-        nextPiece = Tetromino.random(boardLeft.w);
-    }
+   private Tetromino spawnFor(Board board){
+        Tetromino t = Tetromino.random(board.w);
+        t.row = 0;
+        t.col = board.w/2-1; //so the tetromino spawns in the centre of the board
+        return t;
+   }
 
     private void handleKeyPress(KeyEvent ev) {
-        KeyCode code = ev.getCode();
+        switch (ev.getCode()) {
+            //player 1 (WASD)
+            case A -> movePiece(boardLeft, true, 0, -1);
+            case D -> movePiece(boardLeft, true, 0, 1);
+            case W -> rotatePiece(boardLeft, true);
+            case S -> softDrop(boardLeft, true);
 
-        // Player 1 (AWDS)
-        if (code == KeyCode.A) movePiece(boardLeft, currentPieceLeft, 0, -1);
-        else if (code == KeyCode.D) movePiece(boardLeft, currentPieceLeft, 0, 1);
-        else if (code == KeyCode.W) rotatePiece(boardLeft, currentPieceLeft);
-        else if (code == KeyCode.S) tick(boardLeft, currentPieceLeft);
+            //player 2 (Arrows)
+            case LEFT -> movePiece(boardRight, false, 0, -1);
+            case RIGHT -> movePiece(boardRight, false, 0, 1);
+            case UP -> rotatePiece(boardRight, false);
+            case DOWN -> softDrop(boardRight, false);
 
-        // Player 2 (Arrow Keys)
-        else if (code == KeyCode.LEFT) movePiece(boardRight, currentPieceRight, 0, -1);
-        else if (code == KeyCode.RIGHT) movePiece(boardRight, currentPieceRight, 0, 1);
-        else if (code == KeyCode.UP) rotatePiece(boardRight, currentPieceRight);
-        else if (code == KeyCode.DOWN) tick(boardRight, currentPieceRight);
+            default -> {}
+        }
+    }
 
+    private void movePiece(Board board, boolean isLeft, int dRow, int dCol){
+        Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
+        if (piece == null) return;
+        Tetromino moved = piece.moved(dRow,dCol);
+        if (board.canPlace(moved)){
+            if (isLeft) currentPieceLeft = moved; else currentPieceRight = moved;
+            renderAllBoards();
+        }
+    }
+
+    private void softDrop(Board board, boolean isLeft){
+        Tetromino p = isLeft ? currentPieceLeft : currentPieceRight;
+        if (p == null) return;
+        Tetromino down = p.moved(1,0);
+        if (board.canPlace(down)) {
+            p = down;
+        } else {
+            board.lock(p);
+            int linesCleared = board.clearFullLines();
+            p = spawnFor(board);
+            if (!board.canPlace(p)) {endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
+            }
+            if (isLeft) currentPieceLeft = p;
+            else currentPieceRight = p;
+            renderAllBoards();
+        }
+    }
+
+    private void rotatePiece(Board board, boolean isLeft) {
+        Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
+        if (piece == null) return;
+
+        Tetromino rotate = piece.rotated(1);
+        for (int kick : new int[]{0, -1, 1}) {
+            Tetromino t = new Tetromino(rotate.type, rotate.rotation, rotate.row, rotate.col + kick);
+            if (board.canPlace(t)) {
+                if (isLeft) currentPieceLeft = t;
+                else currentPieceRight = t;
+                break;
+            }
+        }
         renderAllBoards();
     }
 
-    private void movePiece(Board board, Tetromino piece, int dRow, int dCol) {
-        Tetromino moved = piece.moved(dRow, dCol);
-        if (board.canPlace(moved)) {
-            if (board == boardLeft) currentPieceLeft = moved;
-            else currentPieceRight = moved;
-        }
-    }
-
-    private void rotatePiece(Board board, Tetromino piece) {
-        Tetromino rotated = piece.rotated(1);
-        if (board.canPlace(rotated)) {
-            if (board == boardLeft) currentPieceLeft = rotated;
-            else currentPieceRight = rotated;
-        }
-    }
-
     private int clearLines(Board board) {
-        int before = board.snapshot().length;
+        int[][] grid = board.snapshot();
+        int full = 0;
+        for (int r = 0; r < board.w;  r++) {
+            boolean all = true;
+            for (int c = 0; c < board.w; c++) {
+                if (grid[r][c] == 0) {
+                    all = false;
+                    break;
+                }
+            }
+            if (all) full++;
+        }
         board.clearFullLines();
-        int after = board.snapshot().length;
-        return before - after;
+        return full;
     }
 
     private void updateScores() {
@@ -183,29 +249,33 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
     }
 
     private void renderAllBoards() {
-        setLeft(renderBoard(boardLeft, currentPieceLeft));
-        setRight(renderBoard(boardRight, currentPieceRight));
+        leftColumn.getChildren().set(1, renderBoard(boardLeft, currentPieceLeft));
+        rightColumn.getChildren().set(1, renderBoard(boardRight, currentPieceRight));
     }
 
     private GridPane renderBoard(Board board, Tetromino piece) {
         GridPane gridPane = new GridPane();
         int[][] grid = board.snapshot();
+
+        //draw locked cells
         for (int r = 0; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
                 Rectangle rect = new Rectangle(25, 25);
                 rect.setStroke(Color.GRAY);
-                rect.setFill(grid[r][c] == 0 ? Color.BLACK : Color.BLUE);
+                int id = grid[r][c];
+                rect.setFill(id == 0 ? Color.BLACK : PALETTE[id]);
                 gridPane.add(rect, c, r);
             }
         }
 
         if (piece != null) {
+            Color curColour = PALETTE[piece.type.colorId];
             for (int[] cell : piece.cells()) {
                 int row = piece.row + cell[1];
                 int col = piece.col + cell[0];
                 if (row >= 0 && row < board.h && col >= 0 && col < board.w) {
                     Rectangle rect = new Rectangle(25, 25);
-                    rect.setFill(Color.RED);
+                    rect.setFill(curColour);
                     rect.setStroke(Color.GRAY);
                     gridPane.add(rect, col, row);
                 }
@@ -213,6 +283,20 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         }
         return gridPane;
     }
+
+    // Palette of colors for tetromino IDs
+// Index 0 is empty (no block)
+    private static final Color[] PALETTE = {
+            Color.TRANSPARENT, // 0 - empty cell
+            Color.CYAN,        // 1 - I
+            Color.BLUE,        // 2 - J
+            Color.ORANGE,      // 3 - L
+            Color.YELLOW,      // 4 - O
+            Color.GREEN,       // 5 - S
+            Color.PURPLE,      // 6 - T
+            Color.RED          // 7 - Z
+    };
+
 
     @Override
     public Parent getScreen() { return this; }

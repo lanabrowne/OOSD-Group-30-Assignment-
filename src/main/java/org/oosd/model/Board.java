@@ -27,8 +27,9 @@ public class Board {
         }
     }
 
-    public void clearFullLines() {
-             soundEffects.play("lineclear");
+    public int clearFullLines() {
+        soundEffects.play("lineclear");
+        int cleared = 0;
         for (int row = 0; row < h; row++) {
             boolean full = true;
             for (int col = 0; col < w; col++) { //checking if each column is filled, if its not then stop checking that row.
@@ -44,9 +45,11 @@ public class Board {
                 }
                 // Clear top row
                 Arrays.fill(grid[0], 0);
+                cleared++;
                 row--; // we're rechecking the same row
             }
         }
+        return cleared;
     }
 
     public boolean lockAndCheckGameOver(Tetromino t) {
