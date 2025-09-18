@@ -5,182 +5,163 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import org.oosd.Main;
+import javafx.scene.text.Font;
 
 import java.util.Optional;
 
 public class TetrisConfigView {
 
-    public static Parent buildConfigRoot(Runnable backAction)
-    {
-
-        //Read JSON file to collect Default value first
+    public static Parent buildConfigRoot(Runnable backAction, Runnable singlePlayer, Runnable twoPlayer) {
+        // Load current config
         ConfigService.load();
         TetrisConfig config = ConfigService.get();
 
-
-
-
-        VBox configScreen = new VBox(10);
+        VBox configScreen = new VBox(15);
         configScreen.setPadding(new Insets(20));
         configScreen.setAlignment(Pos.CENTER);
-        Label Title = new Label("CONFIGURATION");
-        Title.setMaxWidth(Double.MAX_VALUE);
-        Title.setAlignment(Pos.CENTER);
 
-        // Field Width
-        // Field Width
-        Label label = new Label("Field Width: (No of cells):");
-        label.setMinWidth(150);
-        //Here will be user input so set config to collect user input value and sent to JSON
-        Slider slider = new Slider(5, 15, config.fieldWidth());
-        slider.setShowTickLabels(true);
-        slider.setShowTickMarks(true);
-        slider.setMajorTickUnit(1);
-        slider.setMinorTickCount(0);
-        slider.setBlockIncrement(1);
-        slider.setPrefWidth(300);
-        // Label to show current value
-        Label widthValueLabel = new Label(String.valueOf((int) slider.getValue()));
-        slider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            widthValueLabel.setText(String.valueOf(newVal.intValue()));
+        Label title = new Label("CONFIGURATION");
+        title.setFont(Font.font(24));
+        title.setMaxWidth(Double.MAX_VALUE);
+        title.setAlignment(Pos.CENTER);
+
+        // --- Sliders ---
+        Slider sliderWidth = new Slider(5, 15, config.fieldWidth());
+        Label widthValueLabel = new Label(String.valueOf((int) sliderWidth.getValue()));
+        sliderWidth.valueProperty().addListener((obs, oldVal, newVal) -> widthValueLabel.setText(String.valueOf(newVal.intValue())));
+        HBox widthRow = new HBox(10, new Label("Field Width:"), sliderWidth, widthValueLabel);
+        widthRow.setAlignment(Pos.CENTER_LEFT);
+
+        Slider sliderHeight = new Slider(10, 25, config.fieldHeight());
+        Label heightValueLabel = new Label(String.valueOf((int) sliderHeight.getValue()));
+        sliderHeight.valueProperty().addListener((obs, oldVal, newVal) -> heightValueLabel.setText(String.valueOf(newVal.intValue())));
+        HBox heightRow = new HBox(10, new Label("Field Height:"), sliderHeight, heightValueLabel);
+        heightRow.setAlignment(Pos.CENTER_LEFT);
+
+        Slider sliderLevel = new Slider(1, 10, config.gameLevel());
+        Label levelValueLabel = new Label(String.valueOf((int) sliderLevel.getValue()));
+        sliderLevel.valueProperty().addListener((obs, oldVal, newVal) -> levelValueLabel.setText(String.valueOf(newVal.intValue())));
+        HBox levelRow = new HBox(10, new Label("Game Level:"), sliderLevel, levelValueLabel);
+        levelRow.setAlignment(Pos.CENTER_LEFT);
+
+        // --- Checkboxes ---
+        CheckBox musicCheckBox = new CheckBox();
+        musicCheckBox.setSelected(config.music());
+        HBox musicRow = new HBox(10, new Label("Music:"), musicCheckBox);
+        musicRow.setAlignment(Pos.CENTER_LEFT);
+
+        CheckBox sfxCheckBox = new CheckBox();
+        sfxCheckBox.setSelected(config.sfx());
+        HBox sfxRow = new HBox(10, new Label("Sound Effect:"), sfxCheckBox);
+        sfxRow.setAlignment(Pos.CENTER_LEFT);
+
+        CheckBox aiCheckBox = new CheckBox();
+        aiCheckBox.setSelected(config.aiPlay());
+        HBox aiRow = new HBox(10, new Label("AI Play:"), aiCheckBox);
+        aiRow.setAlignment(Pos.CENTER_LEFT);
+
+        // --- Extended Mode & Two-Player ---
+        CheckBox extendedCheckBox = new CheckBox("Extended Mode");
+        extendedCheckBox.setSelected(config.extendMode());
+
+        // Player 1
+        Label player1Label = new Label("Player One Type:");
+        RadioButton player1Human = new RadioButton("Human");
+        RadioButton player1AI = new RadioButton("AI");
+        ToggleGroup player1Group = new ToggleGroup();
+        player1Human.setToggleGroup(player1Group);
+        player1AI.setToggleGroup(player1Group);
+        player1Human.setSelected(true);
+
+        // Player 2
+        Label player2Label = new Label("Player Two Type:");
+        RadioButton player2Human = new RadioButton("Human");
+        RadioButton player2AI = new RadioButton("AI");
+        ToggleGroup player2Group = new ToggleGroup();
+        player2Human.setToggleGroup(player2Group);
+        player2AI.setToggleGroup(player2Group);
+        player2Human.setSelected(true);
+
+        // Player 2 disabled until Extended Mode is checked
+        player2Human.setDisable(!extendedCheckBox.isSelected());
+        player2AI.setDisable(!extendedCheckBox.isSelected());
+        extendedCheckBox.setOnAction(ev -> {
+            boolean extended = extendedCheckBox.isSelected();
+            player2Human.setDisable(!extended);
+            player2AI.setDisable(!extended);
         });
-        HBox labelSliderRow = new HBox(30, label, slider, widthValueLabel);
-        labelSliderRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Field Height
-        Label label2 = new Label("Field height: (No of cells):");
-        label2.setMinWidth(150);
-        //Here is the user input of field height. So collect it and store into JSON file
-        Slider slider2 = new Slider(15, 30, config.fieldHeight());
-        slider2.setShowTickLabels(true);
-        slider2.setShowTickMarks(true);
-        slider2.setMajorTickUnit(5);
-        slider2.setMinorTickCount(0);
-        slider2.setBlockIncrement(1);
-        slider2.setPrefWidth(300);
-        // Label to show current value
-        Label heightValueLabel = new Label(String.valueOf((int) slider2.getValue()));
-        slider2.valueProperty().addListener((obs, oldVal, newVal) -> {
-            heightValueLabel.setText(String.valueOf(newVal.intValue()));
+        VBox playerBox = new VBox(5,
+                extendedCheckBox,
+                player1Label, player1Human, player1AI,
+                player2Label, player2Human, player2AI
+        );
+
+        // --- Buttons ---
+        Button playButton = new Button("Play");
+        playButton.setPrefWidth(120);
+        playButton.setOnAction(ev -> {
+            boolean extended = extendedCheckBox.isSelected();
+            boolean p1Human = player1Human.isSelected();
+            boolean p2Human = player2Human.isSelected();
+
+            if (extended && p1Human && p2Human) {
+                twoPlayer.run();   // two-player mode
+            } else {
+                singlePlayer.run(); // single-player mode
+            }
         });
-        HBox labelSlider2Row = new HBox(30, label2, slider2, heightValueLabel);
-        labelSlider2Row.setAlignment(Pos.CENTER_LEFT);
 
-        // Game Level
-        Label label3 = new Label("Game level:");
-        label3.setMinWidth(150);
-        Slider slider3 = new Slider(1, 10, config.gameLevel());
-        slider3.setShowTickLabels(true);
-        slider3.setShowTickMarks(true);
-        slider3.setMajorTickUnit(1);
-        slider3.setMinorTickCount(0);
-        slider3.setBlockIncrement(1);
-        slider3.setPrefWidth(300);
-        // Label to show current value
-        Label levelValueLabel = new Label(String.valueOf((int) slider3.getValue()));
-        slider3.valueProperty().addListener((obs, oldVal, newVal) -> {
-            levelValueLabel.setText(String.valueOf(newVal.intValue()));
-        });
-        HBox labelSlider3Row = new HBox(30, label3, slider3, levelValueLabel);
-        labelSlider3Row.setAlignment(Pos.CENTER_LEFT);
+        Button backButton = new Button("Back");
+        backButton.setPrefWidth(120);
+        backButton.setOnAction(e -> backAction.run());
 
-        Label musicLabel = new Label("Music:");
-        musicLabel.setMinWidth(150);
-        CheckBox checkBox = new CheckBox();
-        //Validate user input below command and collect check or not
-        checkBox.setSelected(config.music());
-        Label musicStatusLabel = new Label(checkBox.isSelected() ? "Enabled" : "Disabled");
-        checkBox.setOnAction(e -> musicStatusLabel.setText(checkBox.isSelected() ? "Enabled" : "Disabled"));
-        HBox labelCheckboxRow = new HBox(30, musicLabel, checkBox, musicStatusLabel);
-        labelCheckboxRow.setAlignment(Pos.CENTER_LEFT);
-
-        // ----- Sound Effect Checkbox -----
-        Label soundLabel = new Label("Sound Effect:");
-        soundLabel.setMinWidth(150);
-        CheckBox checkBox2 = new CheckBox();
-        //Check user input true or false and store into record type of sfx
-        checkBox2.setSelected(config.sfx());
-        Label soundStatusLabel = new Label(checkBox2.isSelected() ? "Enabled" : "Disabled");
-        checkBox2.setOnAction(e -> soundStatusLabel.setText(checkBox2.isSelected() ? "Enabled" : "Disabled"));
-        HBox labelCheckboxRow2 = new HBox(30, soundLabel, checkBox2, soundStatusLabel);
-        labelCheckboxRow2.setAlignment(Pos.CENTER_LEFT);
-
-        // ----- AI Checkbox -----
-        Label AILabel = new Label("AI Play (on/off):");
-        AILabel.setMinWidth(150);
-        CheckBox checkBox3 = new CheckBox();
-        //Here is AI play check box so collect user selection and send to record type class
-        checkBox3.setSelected(config.aiPlay());
-        Label aiStatusLabel = new Label(checkBox3.isSelected() ? "Enabled" : "Disabled");
-        checkBox3.setOnAction(e -> aiStatusLabel.setText(checkBox3.isSelected() ? "Enabled" : "Disabled"));
-        HBox labelCheckboxRow3 = new HBox(30, AILabel, checkBox3, aiStatusLabel);
-        labelCheckboxRow3.setAlignment(Pos.CENTER_LEFT);
-
-        // ----- Extend Mode Checkbox -----
-        Label extendLabel = new Label("Extend Mode (on/off):");
-        extendLabel.setMinWidth(150);
-        CheckBox checkBox4 = new CheckBox();
-        //Here is extend mode selection by check box. So get user input and send to Tetris config class
-        checkBox4.setSelected(config.extendMode());
-        Label extendStatusLabel = new Label(checkBox4.isSelected() ? "Enabled" : "Disabled");
-        checkBox4.setOnAction(e -> extendStatusLabel.setText(checkBox4.isSelected() ? "Enabled" : "Disabled"));
-        HBox labelCheckboxRow4 = new HBox(30, extendLabel, checkBox4, extendStatusLabel);
-        labelCheckboxRow4.setAlignment(Pos.CENTER_LEFT);
-
-        //Create save button to save current user config condition
-        Button btnSave  = new Button("Save");
-        btnSave.setPrefWidth(200);
-        btnSave.setOnAction(e -> {
-            //send current UI value into Tetris Config
+        Button saveButton = new Button("Save");
+        saveButton.setPrefWidth(120);
+        saveButton.setOnAction(e -> {
             TetrisConfig newConfig = new TetrisConfig(
-                    (int) slider.getValue(),
-                    (int) slider2.getValue(),
-                    (int) slider3.getValue(),
-                    checkBox.isSelected(),
-                    checkBox2.isSelected(),
-                    checkBox3.isSelected(),
-                    checkBox4.isSelected()
+                    (int) sliderWidth.getValue(),
+                    (int) sliderHeight.getValue(),
+                    (int) sliderLevel.getValue(),
+                    musicCheckBox.isSelected(),
+                    sfxCheckBox.isSelected(),
+                    aiCheckBox.isSelected(),
+                    extendedCheckBox.isSelected()
             );
             ConfigService.update(newConfig);
             saveNotification();
-
         });
 
-        // ----- Back Button -----
-        Button backButton = new Button("Back");
-        backButton.setPrefWidth(200);
-        backButton.setOnAction(e -> {
-            if (backAction != null) backAction.run();
-        });
+        HBox buttonBox = new HBox(10, saveButton, backButton, playButton);
+        buttonBox.setAlignment(Pos.CENTER);
 
-        // Add all to config screen
+        // --- Assemble Config Screen ---
         configScreen.getChildren().addAll(
-                Title,
-                labelSliderRow,
-                labelSlider2Row,
-                labelSlider3Row,
-                labelCheckboxRow,
-                labelCheckboxRow2,
-                labelCheckboxRow3,
-                labelCheckboxRow4,
-                new HBox(12, btnSave, backButton)
+                title,
+                widthRow,
+                heightRow,
+                levelRow,
+                musicRow,
+                sfxRow,
+                aiRow,
+                playerBox,
+                buttonBox
         );
 
         return configScreen;
     }
 
-
+    // --- Save Notification ---
     public static boolean saveNotification() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Save Notification");
         alert.setHeaderText("Notification");
         alert.setContentText("Your Changes Recorded");
 
-        ButtonType yesButton = new ButtonType("Close", ButtonBar.ButtonData.YES);
-        alert.getButtonTypes().setAll(yesButton);
+        ButtonType closeButton = new ButtonType("Close", ButtonBar.ButtonData.OK_DONE);
+        alert.getButtonTypes().setAll(closeButton);
 
         Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == yesButton;
+        return result.isPresent() && result.get() == closeButton;
     }
 }

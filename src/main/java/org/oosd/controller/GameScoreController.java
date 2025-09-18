@@ -56,15 +56,18 @@ public class GameScoreController {
                 new PlayerScore(90965, "Lucy")
         ));}
         // Link Back button to callback
-   @FXML
-public void backClicked(ActionEvent e) 
-{
-    // stop the game loop
-    
 
-    main.showMainScreen();
- 
-}
+    // Inject Main if needed
+    public void setMain(Main main) {
+        this.main = main;
+    }
+
+    @FXML
+    private void backClicked(ActionEvent event) {
+        if (main != null) {
+            main.showScreen(main.getMainScreen());
+        }
+    }
 
 
 
