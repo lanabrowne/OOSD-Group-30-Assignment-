@@ -175,6 +175,13 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
             renderAllBoards();
         }
     }
+    public void pauseGame() {
+    if (timer != null) timer.stop();
+}
+
+public void resumeGame() {
+    if (timer != null) timer.start();
+}
 
     private void softDrop(Board board, boolean isLeft){
         Tetromino p = isLeft ? currentPieceLeft : currentPieceRight;

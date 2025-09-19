@@ -24,11 +24,9 @@ public class TwoPlayerScreen implements Screen {
         Label title = new Label("Two Player Tetris");
         title.getStyleClass().add("title");
 
-        // Placeholder for two boards side by side
         HBox boards = new HBox(20);
         boards.setAlignment(Pos.CENTER);
 
-        // You can replace these with your actual Tetris Board nodes
         VBox player1Board = new VBox();
         player1Board.setStyle("-fx-border-color: black; -fx-background-color: lightblue; -fx-min-width: 250; -fx-min-height: 500;");
         player1Board.getChildren().add(new Label("Player 1 Board"));

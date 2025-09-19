@@ -47,20 +47,22 @@ public class Main extends Application implements Frame {
     showScreen(mainScreen);
 }
 
-    /** Start a fresh single-player game. */
+    /* Start a fresh single-player game. */
     public void showNewGame() {
         GameScreen newGame = new GameScreen(this);
         newGame.setRoute("back", mainScreen);
         showScreen(newGame);
     }
 
-    /** Start a fresh two-player game. */
+    /* Start a fresh two-player game after overlay is dismissed. */
     public void showTwoPlayerGame() {
-        System.out.println("DEBUG: entering showTwoPlayerGame()");
-        TwoPlayerTetris twoPlayerGame = new TwoPlayerTetris(this);
-        twoPlayerGame.setRoute("back", mainScreen);
-        showScreen(twoPlayerGame);
-    }
+    System.out.println("DEBUG: entering showTwoPlayerGame()");
+    // Show overlay first, then the game starts after key press
+    TwoPlayerInstructions overlayScreen = new TwoPlayerInstructions(this);
+    showScreen(overlayScreen);
+}
+
+
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -89,10 +91,6 @@ public class Main extends Application implements Frame {
         root.getChildren().setAll(scr.getScreen());
     }
 
-    public MainScreen getMainScreen() {
-        return mainScreen;
-    }
-
     @Override
     public void showExitConfirmation() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -109,4 +107,9 @@ public class Main extends Application implements Frame {
             System.exit(0);
         }
     }
+@Override
+public MainScreen getMainScreen() {
+    return mainScreen;
+}
+
 }
