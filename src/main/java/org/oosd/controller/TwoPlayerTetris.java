@@ -12,6 +12,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.Parent;
 
+import org.oosd.sound.soundEffects;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
@@ -45,15 +46,16 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
     private AnimationTimer timer;
     private Frame parentFrame;
 
+    // tickleft/right moves the players pieces down by one tick
     private void tickLeft() {tick(boardLeft, true);}
     private void tickRight() {tick(boardRight, false);}
 
-
+    // constructor to initialise the two boards, set up UI components and start the game
     public TwoPlayerTetris(Frame frame) {
         this.parentFrame = frame;
 
-        boardLeft = new Board(10, 20);
-        boardRight = new Board(10, 20);
+        boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
+        boardRight = new Board(config.fieldWidth(), config.fieldHeight());
 
         scoreLeft.setFont(Font.font(18));
         scoreRight.setFont(Font.font(18));
@@ -80,6 +82,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         Platform.runLater(this::requestFocus);
     }
 
+    // set up and start the game timer to control intervals between piece drops
     private void setupTimer() {
         timer = new AnimationTimer() {
             @Override
@@ -103,6 +106,12 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         timer.start();
     }
 
+    /*
+    move the tetromino down the board
+    once the piece has landed, lock it in place and spawn the next piece
+    clear any full lines and update the score
+    if a new piece cannot be placed, end game
+     */
     private void tick(Board board, boolean isLeft) {
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
@@ -111,8 +120,10 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         boolean landed = !board.canPlace(down);
 
         if (!landed){
+            // moves the piece downwards
             piece = down;
         } else {
+            // if the piece has landed, lock it and clear any full lines
             board.lock(piece);
             int linesCleared = board.clearFullLines();
 
@@ -125,8 +136,10 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
                 updateScoreLabels();
             }
 
+            // spaw a new piece after locking the previous one
             piece = spawnFor(board);
             if (!board.canPlace(piece)) {
+                // if a new piece cannot be placed, game over and the winner is announced
                 endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
                 return;
             }
@@ -138,6 +151,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         renderAllBoards();
     }
 
+    //calculate the number of points awarded per lines cleared
     private int pointsFor(int linesCleared) {
         return switch (linesCleared){
             case 1 -> 100;
@@ -148,32 +162,43 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         };
     }
 
+    // update text labels to reflect current score
     private void updateScoreLabels(){
         scoreLeft.setText("Score: " + scoreLeftValue);
         scoreRight.setText("Score: " + scoreRightValue);
     }
 
-   private void initialSpawnBoth(){
+    // spawn the initial tetromino piece for both l/r players
+    private void initialSpawnBoth(){
         currentPieceLeft = spawnFor(boardLeft);
         currentPieceRight = spawnFor(boardRight);
    }
 
-   private Tetromino spawnFor(Board board){
+    // create a new random tetromino
+    // positioned at the centre of the board
+    private Tetromino spawnFor(Board board){
         Tetromino t = Tetromino.random(board.w);
         t.row = 0;
-        t.col = board.w/2-1; //so the tetromino spawns in the centre of the board
+        t.col = board.w/2-1;
         return t;
    }
 
+    /*
+    handle player controls -> WASD for player 1 & Arrows for player 2
+    move Left (A/Left key)
+    move Right (D/Right key)
+    Rotate piece (W/Up key)
+    soft drop (S/Down key)
+     */
     private void handleKeyPress(KeyEvent ev) {
         switch (ev.getCode()) {
-            //player 1 (WASD)
+            //player 1 controls (WASD)
             case A -> movePiece(boardLeft, true, 0, -1);
             case D -> movePiece(boardLeft, true, 0, 1);
             case W -> rotatePiece(boardLeft, true);
             case S -> softDrop(boardLeft, true);
 
-            //player 2 (Arrows)
+            //player 2 controls (Arrows)
             case LEFT -> movePiece(boardRight, false, 0, -1);
             case RIGHT -> movePiece(boardRight, false, 0, 1);
             case UP -> rotatePiece(boardRight, false);
@@ -183,24 +208,31 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         }
     }
 
+    // attempt to move the current tetromino by the given row (dRow) and column (dCol)
     private void movePiece(Board board, boolean isLeft, int dRow, int dCol){
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
         Tetromino moved = piece.moved(dRow,dCol);
         if (board.canPlace(moved)){
-            if (isLeft) currentPieceLeft = moved; else currentPieceRight = moved;
+            // update position if the move is valid
+            if (isLeft) currentPieceLeft = moved;
+            else currentPieceRight = moved;
             renderAllBoards();
         }
     }
 
+    // pause game
     public void pauseGame() {
-    if (timer != null) timer.stop();
+        if (timer != null) timer.stop();
     }
 
+    // resume game, works alongside pause
     public void resumeGame() {
-    if (timer != null) timer.start();
+        if (timer != null) timer.start();
     }
 
+    // soft drop the current piece
+    // increases the falling speed, locks the piece into place
     private void softDrop(Board board, boolean isLeft){
         Tetromino p = isLeft ? currentPieceLeft : currentPieceRight;
 
@@ -208,8 +240,10 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         Tetromino down = p.moved(1,0);
 
         if (board.canPlace(down)) {
+            // If it can move (not locked into place) update its position
             p = down;
         } else {
+            // if the piece cant move down any further, lock it into place and check to clear lines
             board.lock(p);
             int linesCleared = board.clearFullLines();
 
@@ -220,37 +254,39 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
                 updateScoreLabels();
             }
 
+            // spawn a new piece after locking the previous one
+            // otherwise call end game and announce the winner
             p = spawnFor(board);
             if (!board.canPlace(p)) {
                 endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
             }
         }
+
         if (isLeft) currentPieceLeft = p;
         else currentPieceRight = p;
         renderAllBoards();
     }
 
+    //rotate the current piece clockwise
     private void rotatePiece(Board board, boolean isLeft) {
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
 
-        Tetromino rotate = piece.rotated(1);
+        Tetromino rotate = piece.rotated(1); // rotate 90 degrees clockwise
         for (int kick : new int[]{0, -1, 1}) {
             Tetromino t = new Tetromino(rotate.type, rotate.rotation, rotate.row, rotate.col + kick);
             if (board.canPlace(t)) {
+                // if this rotated position fits, use it
                 if (isLeft) currentPieceLeft = t;
                 else currentPieceRight = t;
                 break;
             }
         }
+        // redraw boards after rotation
         renderAllBoards();
     }
 
-    private void updateScores() {
-        scoreLeft.setText("Score: " + scoreLeftValue);
-        scoreRight.setText("Score: " + scoreRightValue);
-    }
-
+    // stop the timer and declare game over/the winner
     private void endGame(String msg) {
         timer.stop();
         Text t = new Text(msg);
@@ -258,16 +294,19 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         setBottom(t);
     }
 
+    //refresh both board displays
     private void renderAllBoards() {
         leftColumn.getChildren().set(1, renderBoard(boardLeft, currentPieceLeft));
         rightColumn.getChildren().set(1, renderBoard(boardRight, currentPieceRight));
     }
 
+    // create a gridpane showing the board's state (locked pieces and the current falling piece)
+    // skips the hidden rows (not visible, used to load pieces)
     private GridPane renderBoard(Board board, Tetromino piece) {
         GridPane gridPane = new GridPane();
         int[][] grid = board.snapshot();
 
-        //draw locked cells
+        //draw locked cells (placed tetromino blocks)
         for (int r = hiddenRows; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
                 Rectangle rect = new Rectangle(25, 25);
@@ -279,7 +318,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
             }
         }
 
-        //draw falling piece
+        //draw the current falling piece
         if (piece != null) {
             Color curColour = PALETTE[piece.type.colorId];
             for (int[] cell : piece.cells()) {
@@ -288,6 +327,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
                 if (row < hiddenRows || row >= board.h || col < 0 || col >= board.w) continue;
 
+                // only the hidden part of the piece that is within visible bounds
                 Rectangle rect = new Rectangle(25, 25);
                 rect.setFill(curColour);
                 rect.setStroke(Color.web("#222"));
