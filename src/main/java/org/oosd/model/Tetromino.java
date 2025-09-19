@@ -1,4 +1,5 @@
 package org.oosd.model;
+import javafx.scene.paint.Paint;
 import org.oosd.sound.soundEffects;
 
 /**
@@ -15,6 +16,7 @@ public class Tetromino extends AbstractPiece{
     public int col;
     //Set rotation number 0 = default, +1 = rotate right side +2 = 180, +3 = left rotate
     public int rotation;
+
 
     /**
      * return the position of 4 cells by rotation
@@ -99,6 +101,22 @@ public class Tetromino extends AbstractPiece{
             max = Math.max(max, c[0]);
         }
         return (max - min + 1);
+    }
+
+    //Calculates the width of a piece after rotation
+    public int getBoundingWidth() {
+        int minCol = Integer.MAX_VALUE;
+        int maxCol = Integer.MIN_VALUE;
+        for (int[] cell : cells()) {
+            minCol = Math.min(minCol, cell[0]);
+            maxCol = Math.max(maxCol, cell[0]);
+        }
+        return maxCol - minCol + 1;
+    }
+
+    // Added method to copy Tetromino
+    public Tetromino copy(){
+        return new Tetromino(this.type,this.rotation, this.row, this.col);
     }
 
 }
