@@ -58,8 +58,8 @@ public class Main extends Application implements Frame {
     public void showTwoPlayerGame() {
     System.out.println("DEBUG: entering showTwoPlayerGame()");
     // Show overlay first, then the game starts after key press
-    TwoPlayerInstructions overlayScreen = new TwoPlayerInstructions(this);
-    showScreen(overlayScreen);
+        TwoPlayerInstructions overlayScreen = new TwoPlayerInstructions(this);
+        showScreen(overlayScreen);
 }
 
 

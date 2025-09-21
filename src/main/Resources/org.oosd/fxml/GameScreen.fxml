@@ -9,8 +9,8 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
+<!-- alignment="TOP_CENTER" spacing="10"-->
 <VBox xmlns:fx="http://javafx.com/fxml"
-      alignment="TOP_CENTER" spacing="10"
       fx:controller="org.oosd.controller.GameController"
       prefWidth="400" prefHeight="800"
       fx:id="frameCanvas">

@@ -2,17 +2,14 @@ package org.oosd.controller;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.fxml.FXML;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.scene.Parent;
-
-import org.oosd.sound.soundEffects;
+import javafx.scene.control.Label;
+import javafx.scene.canvas.GraphicsContext;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
@@ -20,28 +17,38 @@ import org.oosd.model.Tetromino;
 import org.oosd.ui.Frame;
 import org.oosd.ui.Screen;
 
-public class TwoPlayerTetris extends BorderPane implements Screen {
+public class TwoPlayerController implements Screen {
 
     TetrisConfig config = ConfigService.get();
 
-    Board boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
-    Board boardRight = new Board(config.fieldWidth(), config.fieldHeight());
-    private static final int hiddenRows = 4;
+    @FXML
+    //from TwoPlayerScreen.fxml
+    private VBox leftColumn;
+    @FXML private VBox rightColumn;
+    @FXML private GridPane leftGrid;
+    @FXML private GridPane rightGrid;
+    @FXML private Label scoreLeft;
+    @FXML private Label scoreRight;
+    @FXML private Label lblWinner;
+    @FXML private VBox frameCanvas;
+    @FXML private Canvas gameCanvasLeft;
+    @FXML private Canvas gameCanvasRight;
 
+
+
+    private Board boardLeft;
+    private Board boardRight;
     private Tetromino currentPieceLeft;
     private Tetromino currentPieceRight;
 
-    private int scoreLeftValue = 0;
-    private int scoreRightValue = 0;
-    private final Text scoreLeft = new Text("Score: 0");
-    private final Text scoreRight = new Text("Score: 0");
-
-    private VBox leftColumn;
-    private VBox rightColumn;
+    private static final int hiddenRows = 4;
 
     private long lastTickLeft = 0;
     private long lastTickRight = 0;
     private double dropIntervalMs = 600;
+
+    private boolean paused = false;
+    private boolean gameOver = false;
 
     private AnimationTimer timer;
     private Frame parentFrame;
@@ -50,36 +57,48 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
     private void tickLeft() {tick(boardLeft, true);}
     private void tickRight() {tick(boardRight, false);}
 
-    // constructor to initialise the two boards, set up UI components and start the game
-    public TwoPlayerTetris(Frame frame) {
-        this.parentFrame = frame;
+    private int scoreLeftValue = 0;
+    private int scoreRightValue = 0;
 
+    // Palette of colors for tetromino IDs
+    // Index 0 is empty (no block)
+    private static final Color[] PALETTE = {
+            Color.TRANSPARENT, // 0 - empty cell
+            Color.CYAN,        // 1 - I
+            Color.BLUE,        // 2 - J
+            Color.ORANGE,      // 3 - L
+            Color.YELLOW,      // 4 - O
+            Color.GREEN,       // 5 - S
+            Color.PURPLE,      // 6 - T
+            Color.RED          // 7 - Z
+    };
+
+    @FXML
+    private void initialize() {
+        // model setup
         boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
         boardRight = new Board(config.fieldWidth(), config.fieldHeight());
 
-        scoreLeft.setFont(Font.font(18));
-        scoreRight.setFont(Font.font(18));
+        // UI
+        scoreLeft.setText("Score: 0");
+        scoreRight.setText("Score: 0");
+        lblWinner.setText("");
 
-        leftColumn = new VBox(8, scoreLeft, renderBoard(boardLeft, null));
-        leftColumn.setAlignment(Pos.CENTER);
-        leftColumn.setPadding(new Insets(8));
+        // input focus
+        Platform.runLater(() -> {
+            leftColumn.setFocusTraversable(true);
+            leftColumn.requestFocus();
+            leftColumn.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
+        });
 
-        rightColumn = new VBox(8, scoreRight, renderBoard(boardRight, null));
-        rightColumn.setAlignment(Pos.CENTER);
-        rightColumn.setPadding(new Insets(8));
-
-        HBox center = new HBox(20, leftColumn, rightColumn);
-        center.setAlignment(Pos.CENTER);
-        setCenter(center);
-
-        setFocusTraversable(true);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
-
+        // start game
         initialSpawnBoth();
-        renderAllBoards();
+        renderBothBoards();
         setupTimer();
+    }
 
-        Platform.runLater(this::requestFocus);
+    public void setParent(Frame frame){
+        this.parentFrame = frame;
     }
 
     // set up and start the game timer to control intervals between piece drops
@@ -148,7 +167,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
         if (isLeft) currentPieceLeft = piece;
         else currentPieceRight = piece;
 
-        renderAllBoards();
+        renderBothBoards();
     }
 
     //calculate the number of points awarded per lines cleared
@@ -184,7 +203,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
    }
 
     /*
-    handle player controls -> WASD for player 1 & Arrows for player 2
+    handle player input -> WASD for player 1 & Arrows for player 2
     move Left (A/Left key)
     move Right (D/Right key)
     Rotate piece (W/Up key)
@@ -204,6 +223,9 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
             case UP -> rotatePiece(boardRight, false);
             case DOWN -> softDrop(boardRight, false);
 
+            // 'p' for pause
+            case P -> togglePause();
+
             default -> {}
         }
     }
@@ -217,7 +239,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
             // update position if the move is valid
             if (isLeft) currentPieceLeft = moved;
             else currentPieceRight = moved;
-            renderAllBoards();
+            renderBothBoards();
         }
     }
 
@@ -264,7 +286,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
         if (isLeft) currentPieceLeft = p;
         else currentPieceRight = p;
-        renderAllBoards();
+        renderBothBoards();
     }
 
     //rotate the current piece clockwise
@@ -283,44 +305,62 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
             }
         }
         // redraw boards after rotation
-        renderAllBoards();
+        renderBothBoards();
+    }
+
+    public void focusGame(){
+        Platform.runLater(() -> {
+            if (leftColumn != null) {
+               leftColumn.setFocusTraversable(true);
+               leftColumn.requestFocus();
+            }
+        });
+    }
+
+    private void togglePause(){
+        if (gameOver) return;
+        if (paused) {resumeGame();}
+        else  {pauseGame();}
+
+        paused = !paused;
     }
 
     // stop the timer and declare game over/the winner
     private void endGame(String msg) {
-        timer.stop();
-        Text t = new Text(msg);
-        t.setFont(Font.font(28));
-        setBottom(t);
+        if (timer != null) timer.stop();
+        lblWinner.setText(msg);
     }
 
-    //refresh both board displays
-    private void renderAllBoards() {
-        leftColumn.getChildren().set(1, renderBoard(boardLeft, currentPieceLeft));
-        rightColumn.getChildren().set(1, renderBoard(boardRight, currentPieceRight));
+    private void renderBothBoards() {
+        renderBoardInto(gameCanvasLeft, boardLeft, currentPieceLeft);
+        renderBoardInto(gameCanvasRight, boardRight, currentPieceRight);
     }
 
-    // create a gridpane showing the board's state (locked pieces and the current falling piece)
-    // skips the hidden rows (not visible, used to load pieces)
-    private GridPane renderBoard(Board board, Tetromino piece) {
-        GridPane gridPane = new GridPane();
+    private void renderBoardInto(Canvas target, Board board, Tetromino piece) {
+        GraphicsContext gc = target.getGraphicsContext2D();
+        gc.clearRect(0, 0, target.getWidth(), target.getHeight());
+
         int[][] grid = board.snapshot();
+        int blockSize = 25;
 
-        //draw locked cells (placed tetromino blocks)
+        // Draw locked cells
         for (int r = hiddenRows; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
-                Rectangle rect = new Rectangle(25, 25);
-                rect.setStroke(Color.web("#222"));
                 int id = grid[r][c];
-                rect.setFill(id == 0 ? Color.BLACK
-                        : id >= 0 && id < PALETTE.length ? PALETTE[id] : Color.BLACK);
-                gridPane.add(rect, c, r - hiddenRows);
-            }
-        }
+                Color fill = (id == 0) ? Color.BLACK
+                        : (id >= 0 && id < PALETTE.length ? PALETTE[id] : Color.BLACK);
 
+                gc.setFill(fill);
+                gc.fillRect(c * blockSize, (r - hiddenRows) * blockSize, blockSize, blockSize);
+
+                gc.setStroke(Color.web("#222"));
+                gc.strokeRect(c * blockSize, (r - hiddenRows) * blockSize, blockSize, blockSize);
+            }
+
+    }
         //draw the current falling piece
         if (piece != null) {
-            Color curColour = PALETTE[piece.type.colorId];
+            Color colour = PALETTE[piece.type.colorId];
             for (int[] cell : piece.cells()) {
                 int row = piece.row + cell[1];
                 int col = piece.col + cell[0];
@@ -328,31 +368,20 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
                 if (row < hiddenRows || row >= board.h || col < 0 || col >= board.w) continue;
 
                 // only the hidden part of the piece that is within visible bounds
-                Rectangle rect = new Rectangle(25, 25);
-                rect.setFill(curColour);
-                rect.setStroke(Color.web("#222"));
-                gridPane.add(rect, col, row - hiddenRows);
+                gc.setFill(colour);
+                gc.fillRect(col * blockSize, (row - hiddenRows) * blockSize, blockSize, blockSize);
+
+                gc.setStroke(Color.web("#222"));
+                gc.strokeRect(col * blockSize, (row - hiddenRows) * blockSize, blockSize, blockSize);
             }
         }
-        return gridPane;
     }
-
-    // Palette of colors for tetromino IDs
-    // Index 0 is empty (no block)
-    private static final Color[] PALETTE = {
-            Color.TRANSPARENT, // 0 - empty cell
-            Color.CYAN,        // 1 - I
-            Color.BLUE,        // 2 - J
-            Color.ORANGE,      // 3 - L
-            Color.YELLOW,      // 4 - O
-            Color.GREEN,       // 5 - S
-            Color.PURPLE,      // 6 - T
-            Color.RED          // 7 - Z
-    };
 
 
     @Override
-    public Parent getScreen() { return this; }
+    public Parent getScreen() {
+        return leftColumn != null ? leftColumn.getScene().getRoot() : null;
+    }
 
     @Override
     public void setRoute(String path, Screen screen) {}
