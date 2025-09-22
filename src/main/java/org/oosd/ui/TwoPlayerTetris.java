@@ -15,17 +15,19 @@ import javafx.scene.Parent;
 
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
+import org.oosd.external.ExternalPlayer;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 
 public class TwoPlayerTetris extends BorderPane implements Screen {
+
 
     TetrisConfig config = ConfigService.get();
     int gameLevel = config.gameLevel();
     boolean musicON = config.music();
     boolean sfxON = config.sfx();
     boolean aiPlay = config.aiPlay();
-    boolean extendMode = config.extendMode();
+
 
     Board boardLeft = new Board(config.fieldWidth(), config.fieldHeight());;
     Board boardRight = new Board(config.fieldWidth(), config.fieldHeight());;
@@ -35,6 +37,9 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
     private Tetromino nextPieceLeft;
     private Tetromino nextPieceRight;
+    private ExternalPlayer externalPlayer;
+    boolean extendMode = config.extendMode();
+
 
     private final Text scoreLeft = new Text("Score: 0");
     private final Text scoreRight = new Text("Score: 0");
@@ -79,8 +84,14 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
         initialSpawnBoth();
         renderAllBoards();
-        setupTimer();
 
+        if(extendMode)
+        {
+            externalPlayer = new ExternalPlayer();
+            externalPlayer.connectToServer();
+        }
+
+        setupTimer();
         Platform.runLater(this::requestFocus);
     }
 

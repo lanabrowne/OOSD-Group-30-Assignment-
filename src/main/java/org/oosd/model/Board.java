@@ -27,6 +27,10 @@ public class Board {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public int clearFullLines() {
         soundEffects.play("lineclear");
         int cleared = 0;

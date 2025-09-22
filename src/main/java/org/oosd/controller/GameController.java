@@ -480,17 +480,11 @@ public class GameController {
                     return;
                 }
                 switch (e.getCode()) {
-                    case LEFT -> {
-                        if (tryMove(0, -1)) render();
-                    }
-                    case RIGHT -> {
-                        if (tryMove(0, 1)) render();
-                    }
-                    case UP -> {
-                        if (tryRotate(1)) render();
-                    }
-                    case DOWN -> downPressed = true;
-                    case P -> togglePause();
+                    case LEFT   -> processCommand("LEFT");
+                    case RIGHT  -> processCommand("RIGHT");
+                    case UP     -> processCommand("ROTATE");
+                    case DOWN   -> processCommand("DOWN");
+                    case P      -> processCommand("PAUSE");
                 }
             });
 
@@ -503,6 +497,25 @@ public class GameController {
         });
 
     }
+
+    //Create command action method to pass the command to external
+    public void processCommand(String command)
+    {
+        switch (command) {
+            case "LEFT" -> {
+                if (tryMove(0, -1)) render();
+            }
+            case "RIGHT" -> {
+                if (tryMove(0, 1)) render();
+            }
+            case "ROTATE" -> {
+                if (tryRotate(1)) render();
+            }
+            case "DOWN" -> downPressed = true;
+            case "PAUSE" -> togglePause();
+        }
+    }
+
 
     // Class-level paused flag
 // Class-level paused flag
