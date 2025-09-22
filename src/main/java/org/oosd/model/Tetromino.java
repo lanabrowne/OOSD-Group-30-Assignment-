@@ -77,13 +77,11 @@ public class Tetromino extends AbstractPiece{
      * @param dir +1 = rotate right, -1 = rotate left
      * @return
      */
-    public Tetromino rotated(int dir)
-    {
-        soundEffects.play("rotated");
-
-        return new Tetromino(type, rotation + (dir > 0 ? 1 : 3), row, col);
-        
+    public Tetromino rotated(int dir) {
+        int newRotation = (rotation + (dir > 0 ? 1 : 3)) & 3; // normalize
+        return new Tetromino(type, newRotation, row, col); // use newRotation!
     }
+
 
     //Initial position is set to center by width
 
@@ -103,16 +101,52 @@ public class Tetromino extends AbstractPiece{
         return (max - min + 1);
     }
 
-    //Calculates the width of a piece after rotation
-    public int getBoundingWidth() {
-        int minCol = Integer.MAX_VALUE;
-        int maxCol = Integer.MIN_VALUE;
+
+
+    // Get the leftmost column of the piece (relative to its own origin)
+    public int getMinCol() {
+        int min = Integer.MAX_VALUE;
         for (int[] cell : cells()) {
-            minCol = Math.min(minCol, cell[0]);
-            maxCol = Math.max(maxCol, cell[0]);
+            min = Math.min(min, cell[0]);
         }
-        return maxCol - minCol + 1;
+        return min;
     }
+
+    // Get the rightmost column of the piece (relative to its own origin)
+    public int getMaxCol() {
+        int max = Integer.MIN_VALUE;
+        for (int[] cell : cells()) {
+            max = Math.max(max, cell[0]);
+        }
+        return max;
+    }
+
+    // Get the width of the piece
+    public int getWidth() {
+        return getMaxCol() - getMinCol() + 1;
+    }
+    // Get the topmost row of the piece (relative to its own origin)
+    public int getMinRow() {
+        int min = Integer.MAX_VALUE;
+        for (int[] cell : cells()) {
+            min = Math.min(min, cell[1]);
+        }
+        return min;
+    }
+
+    // Get the bottommost row of the piece (relative to its own origin)
+    public int getMaxRow() {
+        int max = Integer.MIN_VALUE;
+        for (int[] cell : cells()) {
+            max = Math.max(max, cell[1]);
+        }
+        return max;
+    }
+    // Get the height of the piece
+    public int getHeight() {
+        return getMaxRow() - getMinRow() + 1;
+    }
+
 
     // Added method to copy Tetromino
     public Tetromino copy(){

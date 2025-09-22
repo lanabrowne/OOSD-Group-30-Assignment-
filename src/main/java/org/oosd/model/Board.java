@@ -79,4 +79,8 @@ public class Board {
         }
         return snap;
     }
+
+    public int getWidth(){
+        return w;
+    }
 }

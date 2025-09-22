@@ -39,6 +39,8 @@ public class GameController {
     private boolean paused = false;
     private boolean aiPlay;
 
+
+
     private GraphicsContext gc;
 
     private static final Color[] PALETTE = {
@@ -61,6 +63,8 @@ public class GameController {
 
             if (aiPlay && currentAiMove != null && !aiMoveExecuted) {
                 executeAIMove(currentAiMove);
+                System.out.println("AI move: col = " + currentAiMove.col +
+                        ", rotation = " + currentAiMove.rotation);
                 aiMoveExecuted = true;
             }
 
@@ -79,12 +83,14 @@ public class GameController {
     @FXML
     public void initialize() {
         TetrisConfig config = ConfigService.get();
+        int blockSize = 30; // pixels pre block
         this.board = new Board(config.fieldWidth(), config.fieldHeight());
+        System.out.println("Board Width = "+ board.w);
         this.aiPlay = config.aiPlay();
 
         // Resize canvas to match board
-        gameCanvas.setWidth(config.fieldWidth() * 30);
-        gameCanvas.setHeight(config.fieldHeight() * 30);
+        gameCanvas.setWidth(config.fieldWidth() * blockSize);
+        gameCanvas.setHeight(config.fieldHeight() * blockSize);
         gc = gameCanvas.getGraphicsContext2D();
 
         Platform.runLater(() -> {
@@ -185,18 +191,28 @@ public class GameController {
         current = next;
         next = randomTetromino();
         current.row = 0;
-        current.col = (board.w - current.spawnWidth()) / 2;
+        current.col = (board.w - current.spawnWidth()) / 2; // Center spawn
 
+        // Check if current piece can be placed
         if (!board.canPlace(current)) return false;
 
         if (aiPlay) {
-            // Get full board snapshot
+            // Take a snapshot of the current board
             int[][] snap = board.snapshot();
-            currentAiMove = ai.findBestMove(snap, board.w, board.h, current);
-            aiMoveExecuted = false; // reset for new piece
+
+            // Use 2-ply AI to pick the best move
+            currentAiMove = ai.findBestMove(snap, board.h, board.w, current, next);
+
+            aiMoveExecuted = false; // Reset for new piece
+            if (currentAiMove != null) {
+                System.out.println("AI move: col = " + currentAiMove.col +
+                        ", rotation = " + currentAiMove.rotation);
+            }
         }
+
         return true;
     }
+
 
     private Tetromino randomTetromino() {
         TetrominoType[] types = TetrominoType.values();
@@ -210,15 +226,23 @@ public class GameController {
         int rotations = (move.rotation - current.rotation + 4) % 4;
         for (int i = 0; i < rotations; i++) {
             tryRotate(1);
+            System.out.println("Rotated: current.rotation = " + current.rotation + ", col = " + current.col);
         }
 
-        while (current.col < move.col) {
+        // Clamp column after rotation so piece fits in board
+        int targetCol = Math.max(0, Math.min(move.col, board.w - current.spawnWidth()));
+        while (current.col < targetCol) {
             if (!tryMove(0, 1)) break;
+            System.out.println("Moved right: current.col = " + current.col);
         }
-        while (current.col > move.col) {
+        while (current.col > targetCol) {
             if (!tryMove(0, -1)) break;
+            System.out.println("Moved left: current.col = " + current.col);
         }
+
+        System.out.println("Final AI position: col = " + current.col + ", rotation = " + current.rotation);
     }
+
 
     private void render() {
         gc.clearRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());

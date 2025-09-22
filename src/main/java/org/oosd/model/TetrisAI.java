@@ -1,42 +1,43 @@
 package org.oosd.model;
 
-import org.oosd.controller.GameController;
-import org.oosd.model.Tetromino;
-
 public class TetrisAI {
-    private BoardEvaluator evaluator = new BoardEvaluator();
+
+    private final BoardEvaluator evaluator = new BoardEvaluator();
 
     /**
-     * // Find the best move for the choosen Tetris piece on the board
-     *
-     *
-     * @param piece the tetris piece to place
-     * @ return Move object with col and rotation
+     * Finds the best move for the current piece, optionally considering the next piece.
      */
+    public Move findBestMove(int[][] board, int boardHeight, int boardWidth,
+                             Tetromino current, Tetromino next) {
 
-    public Move findBestMove(int[][] boardSnapshot, int width, int height, Tetromino piece) {
         Move bestMove = null;
         int bestScore = Integer.MIN_VALUE;
 
-        for (int rotation = 0; rotation < 4; rotation++) {
-            Tetromino rotatedPiece = piece.copy();
-            for (int r = 0; r < rotation; r++) rotatedPiece = rotatedPiece.rotated(1);
+        // Try all 4 rotations
+        for (int rot = 0; rot < 4; rot++) {
+            Tetromino rotated = current.rotated(rot - current.rotation); // rotate to this rotation
 
+            // Compute column bounds for this piece
             int minCol = 0;
-            int maxCol = width - rotatedPiece.getBoundingWidth();
+            int maxCol = boardWidth - rotated.spawnWidth(); // ensure it fits
 
-            // Testing AI is using full width of the board
-            System.out.println("AI evaluating columns 0 to " + maxCol);
             for (int col = minCol; col <= maxCol; col++) {
-                int dropRow = findDropRow(boardSnapshot, rotatedPiece, col, height);
+                // Drop piece to the lowest valid row
+                int dropRow = getDropRow(board, boardHeight, boardWidth, rotated, col);
                 if (dropRow < 0) continue;
 
-                int[][] simulatedBoard = simulateDrop(boardSnapshot, rotatedPiece, col, dropRow, width, height);
-                int score = evaluator.evaluateBoard(simulatedBoard);
+                // Copy board and place piece
+                int[][] boardCopy = copyBoard(board);
+                placePiece(boardCopy, rotated, dropRow, col);
+
+                // Evaluate
+                int score = evaluator.evaluateBoard(boardCopy);
+
+                // If you want, you could do 2-ply lookahead using 'next'
 
                 if (score > bestScore) {
                     bestScore = score;
-                    bestMove = new Move(col, rotation);
+                    bestMove = new Move(col, rot, score);
                 }
             }
         }
@@ -44,79 +45,42 @@ public class TetrisAI {
         return bestMove;
     }
 
-
-    // find the row where the piece will land
-    private int findDropRow(int[][] board, Tetromino piece, int col, int boardHeight) {
-        int row = 0;
-        while (isValidPos(board, piece,row, col, boardHeight)) {
-            row++;
+    private int[][] copyBoard(int[][] board) {
+        int[][] copy = new int[board.length][board[0].length];
+        for (int r = 0; r < board.length; r++) {
+            System.arraycopy(board[r], 0, copy[r], 0, board[0].length);
         }
-        return row - 1;
+        return copy;
     }
 
-    // Check if piece can be placed at row/col on given board snapshot
-    private boolean isValidPos(int[][] board, Tetromino piece, int row, int col, int boardHeight) {
-        int boardWidth = board[0].length;
+    private void placePiece(int[][] board, Tetromino piece, int row, int col) {
         for (int[] cell : piece.cells()) {
             int r = row + cell[1];
             int c = col + cell[0];
-            if (r < 0 || r >= boardHeight || c < 0 || c >= boardWidth) return false;
+            if (r >= 0 && r < board.length && c >= 0 && c < board[0].length) {
+                board[r][c] = 1; // or piece type
+            }
+        }
+    }
+
+    private int getDropRow(int[][] board, int boardHeight, int boardWidth,
+                           Tetromino piece, int col) {
+        int row = 0;
+        Tetromino test = new Tetromino(piece.type, piece.rotation, row, col);
+        while (canPlace(board, test)) {
+            row++;
+            test = new Tetromino(piece.type, piece.rotation, row, col);
+        }
+        return row - 1; // last valid row
+    }
+
+    private boolean canPlace(int[][] board, Tetromino piece) {
+        for (int[] cell : piece.cells()) {
+            int r = piece.row + cell[1];
+            int c = piece.col + cell[0];
+            if (r < 0 || r >= board.length || c < 0 || c >= board[0].length) return false;
             if (board[r][c] != 0) return false;
         }
         return true;
     }
-
-
-    private int[][] simulateDrop(int[][] board, Tetromino piece, int col, int row, int width, int height){
-        int[][] simulated = new int[height][width];
-
-        // Copy board
-        for (int r = 0; r < board.length; r++) {
-            System.arraycopy(board[r], 0, simulated[r], 0, board[0].length);
-        }
-
-        //Place piece
-        for (int[] cell : piece.cells()) {
-            int r = row + cell[1];
-            int c = col + cell[0];
-            if (r >= 0 && r < height && c >= 0 && c < width) {
-                simulated[r][c] = piece.type.colorId;
-            }
-        }
-        return clearFullLines(simulated, width, height);
-    }
-
-    // Clear full lines in simulated board
-    private int[][] clearFullLines(int[][] boardArray, int width, int height) {
-        int[][] newBoard = new int[height][width];
-        int newRow = height - 1;
-
-        for (int r = height - 1; r >= 0; r--) {
-            boolean full = true;
-            for (int c = 0; c < width; c++) {
-                if (boardArray[r][c] == 0) {
-                    full = false;
-                    break;
-                }
-            }
-            if (!full) {
-                System.arraycopy(boardArray[r], 0, newBoard[newRow], 0, width);
-                newRow--;
-            }
-        }
-
-        // Top rows are empty
-        for (int r = newRow; r >= 0; r--) {
-            for (int c = 0; c < width; c++) {
-                newBoard[r][c] = 0;
-            }
-        }
-        return newBoard;
-
-    }
 }
-
-
-
-
-

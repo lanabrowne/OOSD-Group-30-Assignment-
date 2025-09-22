@@ -12,19 +12,16 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       alignment="TOP_CENTER" spacing="10"
       fx:controller="org.oosd.controller.GameController"
-      prefWidth="400" prefHeight="800"
       fx:id="frameCanvas">
 
         <Label text="Play" style="-fx-font-size: 24px;"/>
 
         <!-- Game Canvas => This is main game screen size setting  -->
-        <Canvas fx:id="gameCanvas" width="300" height="600" />
+        <Canvas fx:id="gameCanvas" />
 
         <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />
 
         <!-- Back Button -->
    <Button fx:id="btnBack" text="End Game" onAction="#endClicked" />
 
-
-         <Label fx:id="lblGameOver" text="" style="-fx-font-size: 32px; -fx-text-fill: red;" />    
 </VBox>
