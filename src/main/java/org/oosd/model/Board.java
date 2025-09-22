@@ -16,7 +16,7 @@ public class Board {
         this.grid = new int[h][w]; // row-major grid
     }
     //locking the tetromino into the grid by marking their positions with the colorID
-//In conclusion, this happens when the tetromino lands and can no longer move 
+    //In conclusion, this happens when the tetromino lands and can no longer move
     public void lock(Tetromino t) {
         for (int[] pos : t.cells()) {
             int row = t.row + pos[1];
@@ -27,8 +27,8 @@ public class Board {
         }
     }
 
-    public void clearFullLines() {
-             soundEffects.play("lineclear");
+    public int clearFullLines() {
+        int cleared = 0;
         for (int row = 0; row < h; row++) {
             boolean full = true;
             for (int col = 0; col < w; col++) { //checking if each column is filled, if its not then stop checking that row.
@@ -44,9 +44,14 @@ public class Board {
                 }
                 // Clear top row
                 Arrays.fill(grid[0], 0);
+                cleared++;
                 row--; // we're rechecking the same row
             }
         }
+        if (cleared > 0){
+            soundEffects.play("lineclear");
+        }
+        return cleared;
     }
 
     public boolean lockAndCheckGameOver(Tetromino t) {
@@ -63,7 +68,11 @@ public class Board {
         for (int[] pos : t.cells()) {
             int row = t.row + pos[1];
             int col = t.col + pos[0];
-            if (row < 0 || row >= h || col < 0 || col >= w) return false;
+
+            if (col < 0 || col >= w || row >= h) return false;
+
+            if (row < 0) continue;
+
             if (grid[row][col] != 0) return false;
         }
         return true;
