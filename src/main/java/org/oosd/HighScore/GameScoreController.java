@@ -12,18 +12,16 @@ public class GameScoreController {
     @FXML private TableColumn<PlayerScore, Number> scoreColumn;
     @FXML private TableColumn<PlayerScore, String> configColumn;
     @FXML private Button clearButton;
-    @FXML private Button backButton; // ダミー（今は使わない）
+    @FXML private Button backButton;
 
     @FXML
     public void initialize() {
-        // リソースのJSONを読み込む（表示専用）
         ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
 
         nameColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
         scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));
         configColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getConfig()));
 
-        // ランク列（1〜）
         rankColumn.setCellValueFactory(cd ->
                 new ReadOnlyObjectWrapper<>(scoreTable.getItems().indexOf(cd.getValue()) + 1)
         );
@@ -32,11 +30,9 @@ public class GameScoreController {
         scoreTable.setPlaceholder(new Label("No scores yet"));
 
         clearButton.setOnAction(e -> {
-            // 表示リストを空にする（JSONは変更しない）
             ScoreStore.clear();
             scoreTable.refresh();
 
-            // ※ すぐ元に戻したい場合は下を使ってね（任意）
             // ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
             // scoreTable.setItems(ScoreStore.getScores());
             // scoreTable.refresh();
