@@ -60,6 +60,22 @@ public class TwoPlayerInstructions implements Screen {
                l.setFont(Font.font(18));
            }
 
+            // Pause overlay
+            VBox pauseOverlay = new VBox(15);
+            pauseOverlay.setAlignment(Pos.CENTER);
+            pauseOverlay.setPadding(new Insets(40));
+            pauseOverlay.setStyle("-fx-background-color: rgba(0,0,0,0.7);");
+
+            Label pauseLabel = new Label("PAUSED");
+            pauseLabel.setTextFill(Color.WHITE);
+            pauseLabel.setFont(Font.font(40));
+
+            Label pauseHint = new Label("Press P to resume");
+            pauseHint.setTextFill(Color.LIGHTGRAY);
+            pauseHint.setFont(Font.font(18));
+
+            pauseOverlay.getChildren().addAll(pauseLabel, pauseHint);
+
            overlay.getChildren().addAll(bigTitle, player1Keys, player2Keys, startHint);
 
            // StackPane is used for adding overlay and back button
@@ -78,23 +94,38 @@ public class TwoPlayerInstructions implements Screen {
            this.root.setFocusTraversable(true);
 
            this.root.sceneProperty().addListener((obs, oldScene, scene) -> {
-               if (scene != null) {
-                   // Removes overlay on any key press and start the game
-                   this.root.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
-                       if (root.getChildren().contains(overlay)) {
-                           root.getChildren().remove(overlay);
-                           game.resumeGame();
+    if (scene != null) {
+        this.root.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+            switch (e.getCode()) {
+                case P -> {
+                    if (root.getChildren().contains(pauseOverlay)) {
+                        // Resume game
+                        root.getChildren().remove(pauseOverlay);
+                        game.resumeGame();
+                    } else {
+                        // Pause game
+                        root.getChildren().add(pauseOverlay);
+                        game.pauseGame();
+                    }
+                    e.consume();
+                }
+                default -> {
+                    if (root.getChildren().contains(overlay)) {
+                        root.getChildren().remove(overlay);
+                        game.resumeGame();
+                        Object n = loader.getNamespace().get("leftColumn");
+                        if (n instanceof Node node) {
+                            Platform.runLater(node::requestFocus);
+                        }
+                        e.consume();
+                    }
+                }
+            }
+        });
+        Platform.runLater(this.root::requestFocus);
+    }
+});
 
-                           Object n = loader.getNamespace().get("leftColumn");
-                           if (n instanceof Node node) {
-                               Platform.runLater(node::requestFocus);
-                           }
-                           e.consume();
-                       }
-                   });
-                   Platform.runLater(this.root::requestFocus);
-               }
-           });
        } catch (IOException e){
            System.out.println("File Load Error" + e.getMessage());
             e.printStackTrace();
