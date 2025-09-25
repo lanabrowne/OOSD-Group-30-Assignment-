@@ -7,23 +7,30 @@ public class BoardEvaluator {
      * Positive score = better board state.
      */
     public int evaluateBoard(int[][] board) {
-        int linesCleared = getClearedLines(board);
+        int linesScore = getClearedLinesWeighted(board);
         int holes = getHoles(board);
-        int aggregateHeight = getAggregateHeight(board);
         int bumpiness = getBumpiness(board);
         int rowTransitions = getRowTransitions(board);
         int columnTransitions = getColumnTransitions(board);
-        // Weighted scoring: lines cleared > holes > height > bumpiness
-        return  -2 * aggregateHeight
-                - 9 * holes
-                - 1 * bumpiness
-                - 1 * rowTransitions
-                - 1 * columnTransitions
-                + 20 * linesCleared
-                - getColumnHeightPenalty(board); // extra
+        int wellDepths = getWellDepths(board);
+        int coveredCells = getCoveredCells(board);
+
+        return
+                - 50 * holes
+                        - 10 * bumpiness
+                        - 3 * rowTransitions
+                        - 3 * columnTransitions
+                        - 20 * wellDepths
+                        - 25 * coveredCells
+                        + linesScore
+                        - getColumnHeightPenalty(board);
     }
 
-    private int getClearedLines(int[][] board) {
+    /**
+     * Weighted scoring for cleared lines.
+     * Encourages holding I-pieces for tetrises.
+     */
+    private int getClearedLinesWeighted(int[][] board) {
         int cleared = 0;
         for (int y = 0; y < board.length; y++) {
             boolean full = true;
@@ -35,7 +42,11 @@ public class BoardEvaluator {
             }
             if (full) cleared++;
         }
-        return cleared;
+        if (cleared == 1) return 40;
+        if (cleared == 2) return 100;
+        if (cleared == 3) return 300;
+        if (cleared == 4) return 800; // huge bonus for tetrises
+        return 0;
     }
 
     private int getHoles(int[][] board) {
@@ -72,6 +83,7 @@ public class BoardEvaluator {
         }
         return bump;
     }
+
     private int getColumnHeightPenalty(int[][] board) {
         int penalty = 0;
         int boardHeight = board.length;
@@ -82,16 +94,14 @@ public class BoardEvaluator {
 
             // Only penalize really tall columns (>85% of height)
             if (colHeight > boardHeight * 0.85) {
-                penalty += (colHeight - boardHeight * 0.85) * 5; // reduced weight
+                penalty += (colHeight - boardHeight * 0.85) * 5;
             }
 
-            // Optional: slightly reduce penalty for columns near edges to encourage full-board usage
-            // e.g., columns 0 and boardWidth-1 get 50% of the penalty
+            // Slightly reduce penalty for edge columns
             if (x == 0 || x == boardWidth - 1) {
                 penalty /= 2;
             }
         }
-
         return penalty;
     }
 
@@ -104,7 +114,7 @@ public class BoardEvaluator {
                 if (curr != prev) transitions++;
                 prev = curr;
             }
-            if (prev == 0) transitions++; // treat right edge as filled
+            if (prev == 0) transitions++; // right edge as filled
         }
         return transitions;
     }
@@ -118,8 +128,44 @@ public class BoardEvaluator {
                 if (curr != prev) transitions++;
                 prev = curr;
             }
-            if (prev == 0) transitions++; // treat bottom edge as filled
+            if (prev == 0) transitions++; // bottom edge as filled
         }
         return transitions;
+    }
+
+    private int getWellDepths(int[][] board) {
+        int depth = 0;
+        int width = board[0].length;
+        int height = board.length;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                if (board[y][x] == 0) {
+                    if ((x == 0 || board[y][x-1] != 0) &&
+                            (x == width-1 || board[y][x+1] != 0)) {
+                        depth++;
+                    }
+                } else break;
+            }
+        }
+        return depth;
+    }
+
+    private int getCoveredCells(int[][] board) {
+        int covered = 0;
+        int height = board.length;
+        int width = board[0].length;
+
+        for (int x = 0; x < width; x++) {
+            boolean foundBlock = false;
+            for (int y = 0; y < height; y++) {
+                if (board[y][x] != 0) {
+                    foundBlock = true;
+                } else if (foundBlock) {
+                    covered++; // empty cell with block above
+                }
+            }
+        }
+        return covered;
     }
 }

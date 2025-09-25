@@ -20,7 +20,7 @@ public enum TetrominoType{
     S(4, 4, new TetrominoSpec(TetrominoShapes.SHAPES_S)),
     Z(5, 5, new TetrominoSpec(TetrominoShapes.SHAPES_Z)),
     J(6, 6, new TetrominoSpec(TetrominoShapes.SHAPES_J)),
-    L(7, 7, new TetrominoSpec(TetrominoShapes.SHAPES_L));
+ L(7, 7, new TetrominoSpec(TetrominoShapes.SHAPES_L));
 
     public final int id;
     public final int colorId;
@@ -34,6 +34,19 @@ public enum TetrominoType{
         this.colorId = colorId;
         this.spec = spec;
     }
+
+    /**
+     * Returns the number of unique rotations for this piece.
+     * O = 1, I/S/Z = 2, others = 4
+     */
+    public int maxRotation() {
+        return switch (this) {
+            case O -> 1;
+            case I, S, Z -> 2;
+            default -> 4;
+        };
+    }
+
 
 
 

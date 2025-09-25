@@ -83,13 +83,14 @@ public class Tetromino extends AbstractPiece{
     }
 
 
+
     //Initial position is set to center by width
 
     /**
      * Set first drop block at Top of Center
      * @return
      */
-    public  int spawnWidth()
+    public int spawnWidth()
     {
         //Calculate the width by current rotation to set blocks dropping from center
         int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
@@ -101,6 +102,9 @@ public class Tetromino extends AbstractPiece{
         return (max - min + 1);
     }
 
+    public TetrominoType getType() {
+        return this.type;
+    }
 
 
     // Get the leftmost column of the piece (relative to its own origin)
