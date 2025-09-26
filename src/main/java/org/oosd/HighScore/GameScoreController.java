@@ -6,7 +6,6 @@ import javafx.scene.control.*;
 import org.oosd.Main;
 
 public class GameScoreController {
-
     private Main main;
     public void setMain(Main main) { this.main = main; }
 
@@ -20,7 +19,7 @@ public class GameScoreController {
 
     @FXML
     public void initialize() {
-        ScoreStore.loadFromJsonResource("/org/oosd/HighScore/JavaTetrisScore.json");
+        ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
 
         nameColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
         scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));

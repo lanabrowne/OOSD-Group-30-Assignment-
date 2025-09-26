@@ -69,7 +69,8 @@ public class Main extends Application implements Frame {
 
         root = new StackPane();
         Scene scene = new Scene(root, fieldWidth, fieldHeight);
-        scene.getStylesheets().add(Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
+        scene.getStylesheets().add(
+                Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
 
         primaryStage.setTitle("Tetris");
         primaryStage.setScene(scene);

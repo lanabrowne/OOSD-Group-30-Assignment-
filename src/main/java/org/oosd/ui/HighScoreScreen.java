@@ -16,8 +16,8 @@ public class HighScoreScreen implements Screen {
     public Parent getScreen() {
         try {
             URL url = Objects.requireNonNull(
-                    getClass().getResource("/org/oosd/HighScore/GameScoreScreen.fxml"),
-                    "FXML not found: /org/oosd/HighScore/GameScoreScreen.fxml"
+                    getClass().getResource("/org.oosd/HighScore/GameScoreScreen.fxml"),
+                    "FXML not found: /org.oosd/HighScore/GameScoreScreen.fxml"
             );
 
             FXMLLoader loader = new FXMLLoader(url);
