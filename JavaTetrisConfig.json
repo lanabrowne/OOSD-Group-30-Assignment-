@@ -2,8 +2,8 @@
   "fieldWidth": 10,
   "music": false,
   "sfx": false,
-  "fieldHeight": 15,
+  "fieldHeight": 20,
   "gameLevel": 5,
   "extendMode": false,
-  "aiPlay": true
+  "aiPlay": false
 }

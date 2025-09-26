@@ -1,11 +1,10 @@
 package org.oosd.sound;
 
-
 import javafx.scene.media.AudioClip;
 import java.util.HashMap;
 import java.util.Map;
 
-public class soundEffects {
+public class SoundEffects {
     private static final Map<String, AudioClip> sounds = new HashMap<>();
     private static boolean enabled = true;
 
@@ -30,7 +29,7 @@ public class soundEffects {
      */
     private static void loadSound(String key, String path) {
         try {
-            AudioClip clip = new AudioClip(soundEffects.class.getResource(path).toString());
+            AudioClip clip = new AudioClip(SoundEffects.class.getResource(path).toString());
             sounds.put(key, clip);
             System.out.println("Loaded sound: '" + key + "' from path: " + path);
         } catch (Exception e) {

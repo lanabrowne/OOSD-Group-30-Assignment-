@@ -46,6 +46,7 @@ public class MainScreen implements Screen {
         // Buttons
         Button btn = new Button("Click Me");
         Button gameButton = new Button("Play Game");
+    
         Button confButton = new Button("Configurations");
         Button highScoresButton = new Button("High Scores");
         Button exitButton = new Button("Exit");

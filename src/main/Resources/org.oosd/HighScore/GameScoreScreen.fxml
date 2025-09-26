@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.oosd.HighScore.GameScoreController"
+      spacing="10" alignment="CENTER" prefWidth="500" prefHeight="520" style="-fx-padding:16;">
+
+    <HBox alignment="CENTER_RIGHT" spacing="10" prefWidth="500">
+        <Label text="High Score Ranking" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+        <Pane HBox.hgrow="ALWAYS"/>
+        <Button fx:id="clearButton" text="Clear High Score"/>
+    </HBox>
+
+    <TableView fx:id="scoreTable" prefWidth="460" prefHeight="400">
+        <columns>
+            <TableColumn fx:id="rankColumn"   text="#"     prefWidth="50"  />
+            <TableColumn fx:id="nameColumn"   text="Name"  prefWidth="140" />
+            <TableColumn fx:id="scoreColumn"  text="Score" prefWidth="100" style="-fx-alignment: CENTER-RIGHT;"/>
+            <TableColumn fx:id="configColumn" text="Config" prefWidth="170" />
+        </columns>
+    </TableView>
+
+    <Button fx:id="backButton" text="Back" prefWidth="120"/>
+    <Label text="Author: Kosuke Sato" style="-fx-text-fill: gray;"/>
+</VBox>
