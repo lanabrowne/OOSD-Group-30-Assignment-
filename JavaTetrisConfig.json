@@ -5,5 +5,5 @@
   "fieldHeight": 20,
   "gameLevel": 5,
   "extendMode": false,
-  "aiPlay": false
+  "aiPlay": true
 }
