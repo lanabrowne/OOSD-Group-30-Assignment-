@@ -1,6 +1,6 @@
 //clears rows and moves the remaining tetromino down :)
 package org.oosd.model;
-import org.oosd.sound.soundEffects;
+import org.oosd.sound.SoundEffects;
 
 import java.util.Arrays;
 
@@ -49,7 +49,7 @@ public class Board {
             }
         }
         if (cleared > 0){
-            soundEffects.play("lineclear");
+            SoundEffects.play("lineclear");
         }
         return cleared;
     }

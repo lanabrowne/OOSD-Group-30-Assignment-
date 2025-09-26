@@ -3,8 +3,12 @@ package org.oosd.HighScore;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import org.oosd.Main;
 
 public class GameScoreController {
+
+    private Main main;
+    public void setMain(Main main) { this.main = main; }
 
     @FXML private TableView<PlayerScore> scoreTable;
     @FXML private TableColumn<PlayerScore, Number> rankColumn;
@@ -16,7 +20,7 @@ public class GameScoreController {
 
     @FXML
     public void initialize() {
-        ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
+        ScoreStore.loadFromJsonResource("/org/oosd/HighScore/JavaTetrisScore.json");
 
         nameColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
         scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));
@@ -33,13 +37,20 @@ public class GameScoreController {
             ScoreStore.clear();
             scoreTable.refresh();
 
-            // ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
-            // scoreTable.setItems(ScoreStore.getScores());
-            // scoreTable.refresh();
+            ScoreStore.loadFromJsonResource("/org/oosd/HighScore/JavaTetrisScore.json");
+            scoreTable.setItems(ScoreStore.getScores());
+            scoreTable.refresh();
         });
 
         if (backButton != null) {
-            backButton.setOnAction(e -> System.out.println("Back pressed (not wired)"));
+            backButton.setOnAction(e -> {
+                if (main != null) {
+                    main.showScreen(main.getMainScreen());
+                } else {
+                    System.out.println("Back pressed (main not set)");
+                }
+            });
         }
     }
 }
+

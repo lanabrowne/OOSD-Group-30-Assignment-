@@ -53,8 +53,8 @@ import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
-import org.oosd.sound.music;
-import org.oosd.sound.soundEffects;
+import org.oosd.sound.Music;
+import org.oosd.sound.SoundEffects;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
 
@@ -223,7 +223,7 @@ public class GameController {
     private void showGameOver() {
         // Stop game loop immediately
         loop.stop();
-        soundEffects.play("gameover");
+        SoundEffects.play("gameover");
 
         // Ensure gc is initialized
         if (gc == null) gc = gameCanvas.getGraphicsContext2D();
@@ -457,10 +457,10 @@ public class GameController {
 
         drawInitialScreen();
 
-        soundEffects.init(sfxON);
+        SoundEffects.init(sfxON);
 
         if (musicON) {
-            music.play("/background.mp3");
+            Music.play("/background.mp3");
         }
 
 

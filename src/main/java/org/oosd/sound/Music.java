@@ -3,7 +3,7 @@ package org.oosd.sound;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
-public class music {
+public class Music {
 
     private static MediaPlayer mediaPlayer;
 
@@ -14,7 +14,7 @@ public class music {
                 mediaPlayer.stop();
             }
 
-            Media media = new Media(music.class.getResource(path).toString());
+            Media media = new Media(Music.class.getResource(path).toString());
             mediaPlayer = new MediaPlayer(media);
             mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // loop indefinitely
             mediaPlayer.play();
