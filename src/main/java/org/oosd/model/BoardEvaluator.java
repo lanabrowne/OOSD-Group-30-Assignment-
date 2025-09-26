@@ -3,8 +3,13 @@ package org.oosd.model;
 public class BoardEvaluator {
 
     /**
-     * Evaluate a Tetris board.
-     * Positive score = better board state.
+     * This class provides the heuristic functions of a Tetris game.
+     * The AI uses these heuristics to evaluate the best possible move.
+     * These weights were evaluated to heavily discourage holes and covered cells
+     * It slightly discourages bumpiness and row/col transistions
+     * and strongly rewards clearing multiple lines.
+     *
+     *
      */
     public int evaluateBoard(int[][] board) {
         int linesScore = getClearedLinesWeighted(board);
@@ -27,11 +32,11 @@ public class BoardEvaluator {
     }
 
     /**
-     * Weighted scoring for cleared lines.
-     * Encourages holding I-pieces for tetrises.
+     * Calculates the "weighted" points based on the number of lines cleared in the current board
      */
     private int getClearedLinesWeighted(int[][] board) {
         int cleared = 0;
+        // Count how many rows are completely filled with blocks
         for (int y = 0; y < board.length; y++) {
             boolean full = true;
             for (int x = 0; x < board[0].length; x++) {
@@ -42,13 +47,14 @@ public class BoardEvaluator {
             }
             if (full) cleared++;
         }
+        // Scoring formula based on how many lines are cleared at once
         if (cleared == 1) return 40;
         if (cleared == 2) return 100;
         if (cleared == 3) return 300;
-        if (cleared == 4) return 800; // huge bonus for tetrises
+        if (cleared == 4) return 800; // Massive bonus for a Tetris(4 lines)
         return 0;
     }
-
+    /*returns the number of holes in the board */
     private int getHoles(int[][] board) {
         int holes = 0;
         for (int x = 0; x < board[0].length; x++) {
@@ -60,22 +66,14 @@ public class BoardEvaluator {
         }
         return holes;
     }
-
-    private int getAggregateHeight(int[][] board) {
-        int total = 0;
-        for (int x = 0; x < board[0].length; x++) {
-            total += getColumnHeight(board, x);
-        }
-        return total;
-    }
-
+    /* Returns column height */
     private int getColumnHeight(int[][] board, int col) {
         for (int y = 0; y < board.length; y++) {
             if (board[y][col] != 0) return board.length - y;
         }
         return 0;
     }
-
+    // Measures how uneven the surface of this board
     private int getBumpiness(int[][] board) {
         int bump = 0;
         for (int x = 0; x < board[0].length - 1; x++) {
@@ -83,7 +81,7 @@ public class BoardEvaluator {
         }
         return bump;
     }
-
+    // Penalises AI for having columns that are too high, reduces penalty for edge cases
     private int getColumnHeightPenalty(int[][] board) {
         int penalty = 0;
         int boardHeight = board.length;
@@ -104,7 +102,7 @@ public class BoardEvaluator {
         }
         return penalty;
     }
-
+    // Measures how uneven a row is
     private int getRowTransitions(int[][] board) {
         int transitions = 0;
         for (int y = 0; y < board.length; y++) {
@@ -118,7 +116,7 @@ public class BoardEvaluator {
         }
         return transitions;
     }
-
+    // measures how jagged a column is
     private int getColumnTransitions(int[][] board) {
         int transitions = 0;
         for (int x = 0; x < board[0].length; x++) {
@@ -132,7 +130,7 @@ public class BoardEvaluator {
         }
         return transitions;
     }
-
+    // measures how many wells(empty cells surrounded by cells on either side) exist across the board
     private int getWellDepths(int[][] board) {
         int depth = 0;
         int width = board[0].length;
@@ -150,7 +148,8 @@ public class BoardEvaluator {
         }
         return depth;
     }
-
+    // counts the empty spaces that have at least one block above them
+    // These covered cells are pretty bad as they can not be directly filled
     private int getCoveredCells(int[][] board) {
         int covered = 0;
         int height = board.length;
