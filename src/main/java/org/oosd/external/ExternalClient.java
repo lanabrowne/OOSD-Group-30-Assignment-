@@ -5,6 +5,7 @@ import java.net.Socket;
 
 /**
  * This class is for socket communication class with Server (Tetris Server jar file)
+ * This class is like at front window of network communication (Send-receive operation with server)
  */
 public class ExternalClient {
     //Set socket
@@ -17,18 +18,43 @@ public class ExternalClient {
 
     /**
      * By using host name and port number, connect to server
-     * @param host --> Host name to connect with
-     * @param port --> Port number to connect to server
+     * @parameter--> Host name to connect with
+     * @param  --> Port number to connect to server
      * @return
      */
-    public boolean connect(String host, int port)
+    public boolean connect()
     {
         try{
-            socket = new Socket(host, port);
+            socket = new Socket("localhost", 3000);
             writeOut = new PrintWriter(socket.getOutputStream(), true);
             readIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            //Start receiving thread
+            //Call thread command and create anonymouse thread and run the thread
+            //And use the lamda to implement Runable interface
+            Thread listener = new Thread(() -> {
+                try{
+                    String line;
+                    //Read string massages line one by one
+                    while((line = readIn.readLine()) != null)
+                    {
+                        //Store the collected method in the handle method
+                        //ex) If LEFT, RIGHT msg received, send to controller
+                        //or operation class and operate into UI
+                        handle(line);
+                    }
+                }catch(IOException e)
+                {
+                    System.out.println("Connection lost: " + e.getMessage());
+                }
+            });
+
+
+            listener.start();
+
+
             connected = true;
-            System.out.println("Connected to Server: " + host + ": " + port);
+            System.out.println("Connected to Server: " + ": " );
             return true;
         } catch (IOException e)
         {
@@ -76,6 +102,16 @@ public class ExternalClient {
         {
             System.err.println("Closing error: " + e.getMessage());
         }
+    }
+
+    /**
+     * This method is collecting actions and board data from server
+     * and reflect to External Player mode
+     * @param msg
+     */
+    public void handle(String msg)
+    {
+        System.out.println("Received msg: " + msg);
     }
 
     public boolean isConnected()

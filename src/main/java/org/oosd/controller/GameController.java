@@ -45,6 +45,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
+import javafx.scene.text.Font;
 
 import org.oosd.Main;
 import org.oosd.config.ConfigService;
@@ -52,7 +53,6 @@ import org.oosd.config.TetrisConfig;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.model.TetrominoType;
-import javafx.scene.text.Font;
 import org.oosd.sound.music;
 import org.oosd.sound.soundEffects;
 import org.oosd.ui.Frame;

@@ -87,7 +87,7 @@ public class TwoPlayerTetris extends BorderPane implements Screen {
 
         if(extendMode)
         {
-            externalPlayer = new ExternalPlayer();
+            //externalPlayer = new ExternalPlayer();
             externalPlayer.connectToServer();
         }
 

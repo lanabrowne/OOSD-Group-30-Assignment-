@@ -1,9 +1,13 @@
 {
+<<<<<<< HEAD
 
   "fieldWidth": 9,
+=======
+  "fieldWidth": 10,
+>>>>>>> origin/main
   "music": false,
   "sfx": false,
-  "fieldHeight": 23,
+  "fieldHeight": 15,
   "gameLevel": 6,
   "extendMode": true,
   "aiPlay": false

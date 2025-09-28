@@ -18,7 +18,7 @@ public class ExternalPlayer {
     public boolean connectToServer()
     {
         //Set host name and port number to connect to server
-        return client.connect("localhost", 3000);
+        return client.connect();
     }
 
     public void processServerInput()
