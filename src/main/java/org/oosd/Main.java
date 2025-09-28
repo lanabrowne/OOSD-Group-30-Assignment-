@@ -28,24 +28,24 @@ public class Main extends Application implements Frame {
     /**
      * Build all top-level screens and wire up navigation.
      */
- private void buildScreens() {
-    mainScreen = new MainScreen(this);
+    private void buildScreens() {
+        mainScreen = new MainScreen(this);
 
-    ConfigScreen configScreen = new ConfigScreen(
-        () -> showNewGame(),        // single-player callback
-        () -> showTwoPlayerGame(),  // two-player callback
-        () -> showScreen(mainScreen) // back callback
-    );
+        ConfigScreen configScreen = new ConfigScreen(
+                () -> showNewGame(),        // single-player callback
+                () -> showTwoPlayerGame(),  // two-player callback
+                () -> showScreen(mainScreen) // back callback
+        );
 
-    HighScoreScreen highScoreScreen = new HighScoreScreen(this);
+        HighScoreScreen highScoreScreen = new HighScoreScreen(this);
 
-    mainScreen.setRoute("config", configScreen);
-    mainScreen.setRoute("highscores", highScoreScreen);
-    configScreen.setRoute("back", mainScreen);
-    highScoreScreen.setRoute("back", mainScreen);
+        mainScreen.setRoute("config", configScreen);
+        mainScreen.setRoute("highscores", highScoreScreen);
+        configScreen.setRoute("back", mainScreen);
+        highScoreScreen.setRoute("back", mainScreen);
 
-    showScreen(mainScreen);
-}
+        showScreen(mainScreen);
+    }
 
     /* Start a fresh single-player game. */
     public void showNewGame() {
@@ -56,13 +56,11 @@ public class Main extends Application implements Frame {
 
     /* Start a fresh two-player game after overlay is dismissed. */
     public void showTwoPlayerGame() {
-    System.out.println("DEBUG: entering showTwoPlayerGame()");
-    // Show overlay first, then the game starts after key press
+        System.out.println("DEBUG: entering showTwoPlayerGame()");
+        // Show overlay first, then the game starts after key press
         TwoPlayerInstructions overlayScreen = new TwoPlayerInstructions(this);
         showScreen(overlayScreen);
-}
-
-
+    }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -71,7 +69,8 @@ public class Main extends Application implements Frame {
 
         root = new StackPane();
         Scene scene = new Scene(root, fieldWidth, fieldHeight);
-        scene.getStylesheets().add(Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
+        scene.getStylesheets().add(
+                Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
 
         primaryStage.setTitle("Tetris");
         primaryStage.setScene(scene);
@@ -107,9 +106,10 @@ public class Main extends Application implements Frame {
             System.exit(0);
         }
     }
-@Override
-public MainScreen getMainScreen() {
-    return mainScreen;
+
+    @Override
+    public MainScreen getMainScreen() {
+        return mainScreen;
+    }
 }
 
-}

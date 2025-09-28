@@ -1,10 +1,6 @@
 {
-<<<<<<< HEAD
 
-  "fieldWidth": 9,
-=======
   "fieldWidth": 10,
->>>>>>> origin/main
   "music": false,
   "sfx": false,
   "fieldHeight": 15,

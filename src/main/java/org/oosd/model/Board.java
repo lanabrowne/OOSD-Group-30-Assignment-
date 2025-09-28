@@ -1,6 +1,6 @@
 //clears rows and moves the remaining tetromino down :)
 package org.oosd.model;
-import org.oosd.sound.soundEffects;
+import org.oosd.sound.SoundEffects;
 
 import java.util.Arrays;
 
@@ -32,7 +32,8 @@ public class Board {
      * @return
      */
     public int clearFullLines() {
-        int cleared = 0;
+        //soundEffects.play("lineclear");
+        int cleared = 0; // Add scoring system
         for (int row = 0; row < h; row++) {
             boolean full = true;
             for (int col = 0; col < w; col++) { //checking if each column is filled, if its not then stop checking that row.
@@ -42,6 +43,7 @@ public class Board {
                 }
             }
             if (full) {
+                cleared++;
                 // Shift rows above down
                 for (int r = row; r > 0; r--) {
                     System.arraycopy(grid[r - 1], 0, grid[r], 0, w);
@@ -52,10 +54,7 @@ public class Board {
                 row--; // we're rechecking the same row
             }
         }
-        if (cleared > 0){
-            soundEffects.play("lineclear");
-        }
-        return cleared;
+        return cleared; // Return number of times lines were cleared
     }
 
     public boolean lockAndCheckGameOver(Tetromino t) {
@@ -88,5 +87,9 @@ public class Board {
             System.arraycopy(grid[i], 0, snap[i], 0, w);
         }
         return snap;
+    }
+
+    public int getWidth(){
+        return w;
     }
 }
