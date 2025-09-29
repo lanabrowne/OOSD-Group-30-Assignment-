@@ -25,6 +25,12 @@ public class Main extends Application implements Frame {
         launch(args);
     }
 
+public void showTwoPlayerAI() {
+    TwoPlayerAIScreen aiScreen = new TwoPlayerAIScreen(this, mainScreen);
+    showScreen(aiScreen);
+}
+
+
     /**
      * Build all top-level screens and wire up navigation.
      */
@@ -34,7 +40,9 @@ public class Main extends Application implements Frame {
         ConfigScreen configScreen = new ConfigScreen(
                 () -> showNewGame(),        // single-player callback
                 () -> showTwoPlayerGame(),  // two-player callback
+                () -> showTwoPlayerAI(),
                 () -> showScreen(mainScreen) // back callback
+                
         );
 
         HighScoreScreen highScoreScreen = new HighScoreScreen(this);
@@ -58,7 +66,7 @@ public class Main extends Application implements Frame {
     public void showTwoPlayerGame() {
         System.out.println("DEBUG: entering showTwoPlayerGame()");
         // Show overlay first, then the game starts after key press
-        TwoPlayerInstructions overlayScreen = new TwoPlayerInstructions(this);
+        HumanvsHumanInstructions overlayScreen = new HumanvsHumanInstructions(this);
         showScreen(overlayScreen);
     }
 

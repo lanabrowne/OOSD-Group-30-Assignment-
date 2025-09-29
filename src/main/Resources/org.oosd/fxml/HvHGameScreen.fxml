@@ -13,6 +13,7 @@
       alignment="TOP_CENTER"
       spacing="10">
 
+  
     <HBox alignment="CENTER" spacing="20">
 
         <!-- Left Player -->
@@ -35,5 +36,3 @@
     <Label fx:id="lblWinner" text="" style="-fx-font-size: 28px; -fx-text-fill: red;"/>
 
 </VBox>
-
-
