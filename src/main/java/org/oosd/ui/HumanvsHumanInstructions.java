@@ -16,12 +16,12 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class TwoPlayerInstructions implements Screen {
+public class HumanvsHumanInstructions implements Screen {
 
     private StackPane root;       // StackPane holds both overlay and game!
     private TwoPlayerController game; // controller from FXML
 
-    public TwoPlayerInstructions(Frame frame) {
+    public HumanvsHumanInstructions(Frame frame) {
        try {
            //"/org.oosd/fxml/HvHGameScreen.fxml"
            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org.oosd/fxml/HvHGameScreen.fxml"));

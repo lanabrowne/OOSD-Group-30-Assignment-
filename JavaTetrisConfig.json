@@ -4,6 +4,6 @@
   "sfx": false,
   "fieldHeight": 20,
   "gameLevel": 5,
-  "extendMode": false,
+  "extendMode": true,
   "aiPlay": true
 }

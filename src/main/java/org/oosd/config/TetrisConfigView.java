@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public class TetrisConfigView {
 
-    public static Parent buildConfigRoot(Runnable backAction, Runnable singlePlayer, Runnable twoPlayer) {
+    public static Parent buildConfigRoot(Runnable backAction, Runnable singlePlayer, Runnable twoPlayer, Runnable twoPlayerAI) {
         // Load current config
         ConfigService.load();
         TetrisConfig config = ConfigService.get();
@@ -99,18 +99,22 @@ public class TetrisConfigView {
 
         // --- Buttons ---
         Button playButton = new Button("Play");
-        playButton.setPrefWidth(120);
-        playButton.setOnAction(ev -> {
-            boolean extended = extendedCheckBox.isSelected();
-            boolean p1Human = player1Human.isSelected();
-            boolean p2Human = player2Human.isSelected();
+playButton.setPrefWidth(120);
+playButton.setOnAction(ev -> {
+    boolean extended = extendedCheckBox.isSelected();
+    boolean p1Human = player1Human.isSelected();
+    boolean p2Human = player2Human.isSelected();
 
-            if (extended && p1Human && p2Human) {
-                twoPlayer.run();   // two-player mode
-            } else {
-                singlePlayer.run(); // single-player mode
-            }
-        });
+    if (extended && !p1Human && !p2Human) {
+        // AI vs AI selected → call AI callback
+        twoPlayerAI.run();
+    } else if (extended && p1Human && p2Human) {
+        twoPlayer.run();   // normal two-player
+    } else {
+        singlePlayer.run(); // single-player
+    }
+});
+
 
         Button backButton = new Button("Back");
         backButton.setPrefWidth(120);
