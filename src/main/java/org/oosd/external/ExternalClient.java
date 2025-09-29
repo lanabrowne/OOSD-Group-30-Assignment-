@@ -14,7 +14,15 @@ public class ExternalClient {
     //Use Buffer to read file
     private BufferedReader readIn;
     //Set connected to false as default
+    private ExternalPlayer player;
     private boolean connected = false;
+
+    public void setPlayer(ExternalPlayer player)
+    {
+        //Initialize External Player
+        this.player = player;
+    }
+
 
     /**
      * By using host name and port number, connect to server
@@ -49,7 +57,7 @@ public class ExternalClient {
                 }
             });
 
-
+            //Run the thread
             listener.start();
 
 
@@ -65,6 +73,7 @@ public class ExternalClient {
 
     }
 
+    //Send command to server (this time this method will be used by AI)
     public void sendCommand(String command)
     {
         if(connected && writeOut != null)
@@ -73,12 +82,14 @@ public class ExternalClient {
         }
     }
 
+    //Read only one line from server response
     public String readResponse()
     {
         try
         {
             if(connected && readIn != null)
             {
+                //read one line
                 return readIn.readLine();
             }
         } catch (IOException e)
@@ -112,6 +123,12 @@ public class ExternalClient {
     public void handle(String msg)
     {
         System.out.println("Received msg: " + msg);
+        //If player is found, pass the command (msg) and let player operate
+        //action
+        if(player != null)
+        {
+            player.processCommand(msg);
+        }
     }
 
     public boolean isConnected()

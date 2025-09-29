@@ -14,9 +14,9 @@ import javafx.scene.text.Font;
 import org.oosd.Main;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
+import org.oosd.external.ExternalPlayer;
 import org.oosd.model.*;
-//org.oosd.sound.SoundEffects;
-import org.oosd.sound.soundEffects;
+import org.oosd.sound.SoundEffects;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
 
@@ -37,6 +37,8 @@ public class GameController {
     private boolean aiMoveExecuted = false;
 
     private long lastDropNs = 0;
+
+    private ExternalPlayer externalClient;
 
     /**
      * This is the number of hiding lines for the spawn. So that
@@ -136,7 +138,7 @@ public class GameController {
      */
     private void showGameOver() {
         loop.stop();
-        soundEffects.play("gameover");
+        SoundEffects.play("gameover");
     }
 
     /**

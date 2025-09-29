@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.canvas.GraphicsContext;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
+import org.oosd.external.ExternalClient;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
 import org.oosd.ui.Frame;
@@ -21,6 +22,16 @@ public class TwoPlayerController implements Screen {
 
     TetrisConfig config = ConfigService.get();
 
+    //Implement external client into both side player screen
+    private ExternalClient externalLeft;
+    private ExternalClient externalRight;
+
+    //Initialize external client
+    public void setExternalClients (ExternalClient left, ExternalClient right)
+    {
+        this.externalLeft = left;
+        this.externalRight = right;
+    }
     @FXML
     //from TwoPlayerScreen.fxml
     private VBox leftColumn;
@@ -212,16 +223,85 @@ public class TwoPlayerController implements Screen {
     private void handleKeyPress(KeyEvent ev) {
         switch (ev.getCode()) {
             //player 1 controls (WASD)
-            case A -> movePiece(boardLeft, true, 0, -1);
-            case D -> movePiece(boardLeft, true, 0, 1);
-            case W -> rotatePiece(boardLeft, true);
-            case S -> softDrop(boardLeft, true);
+            /**
+             * In here, sending user action to server will be implemented
+             * for the case (Human vs External) or (External vs Human)
+             */
+            case A -> {
+                movePiece(boardLeft, true, 0, -1);
+                //if server is connected, send action to server
+                if(externalLeft != null && externalLeft.isConnected())
+                {
+                    //Send left command to server
+                    externalLeft.sendCommand("LEFT");
+                }
+            }
+            case D -> {
+                movePiece(boardLeft, true, 0, 1);
+                //if server is connected, send action to server
+                if(externalLeft != null && externalLeft.isConnected())
+                {
+                    //Send right command to server
+                    externalLeft.sendCommand("RIGHT");
+                }
+            }
+            case W -> {
+                rotatePiece(boardLeft, true);
+                //if server is connected, send action to server
+                if(externalLeft != null && externalLeft.isConnected())
+                {
+                    //Send rotate command to server
+                    externalLeft.sendCommand("ROTATE");
+                }
+            }
+            case S -> {
+                softDrop(boardLeft, true);
+                //if server is connected, send action to server
+                if(externalLeft != null && externalLeft.isConnected())
+                {
+                    //Send down command to server
+                    externalLeft.sendCommand("DOWN");
+                }
+            }
 
             //player 2 controls (Arrows)
-            case LEFT -> movePiece(boardRight, false, 0, -1);
-            case RIGHT -> movePiece(boardRight, false, 0, 1);
-            case UP -> rotatePiece(boardRight, false);
-            case DOWN -> softDrop(boardRight, false);
+            case LEFT -> {
+                movePiece(boardRight, false, 0, -1);
+                //if server is connected, send action to server
+                if(externalRight != null && externalRight.isConnected())
+                {
+                    //Send left command to server
+                    externalRight.sendCommand("LEFT");
+                }
+            }
+            case RIGHT -> {
+                movePiece(boardRight, false, 0, 1);
+                //if server is connected, send action to server
+                if(externalRight != null && externalRight.isConnected())
+                {
+                    //Send right command to server
+                    externalRight.sendCommand("RIGHT");
+                }
+            }
+
+            case UP -> {
+                rotatePiece(boardRight, false);
+                //if server is connected, send action to server
+                if(externalRight != null && externalRight.isConnected())
+                {
+                    //Send rotate command to server
+                    externalRight.sendCommand("ROTATE");
+                }
+            }
+            case DOWN ->{
+                softDrop(boardRight, false);
+                //if server is connected, send action to server
+                if(externalRight != null && externalRight.isConnected())
+                {
+                    //Send down command to server
+                    externalRight.sendCommand("DOWN");
+                }
+            }
 
             // 'p' for pause
             case P -> togglePause();
@@ -230,8 +310,37 @@ public class TwoPlayerController implements Screen {
         }
     }
 
+    /**
+     * Create public wrapper method to handle sent action from external player class.
+     * @param cmd
+     * @param isLeft
+     */
+    public void processCommand(String cmd, boolean isLeft)
+    {
+        switch(cmd.toUpperCase())
+        {
+            //using same method with handle key press method
+            case "LEFT" -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, -1);
+            case "RIGHT" -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, 1);
+            case "ROTATE" -> rotatePiece(isLeft ? boardLeft : boardRight, isLeft);
+            case "DOWN" -> softDrop(isLeft ? boardLeft : boardRight, isLeft);
+            //set the error handling line for the case when controller received
+            //exception command
+            default -> System.out.println("Unknown command sent: " + cmd);
+        }
+    }
+
+
     // attempt to move the current tetromino by the given row (dRow) and column (dCol)
-    private void movePiece(Board board, boolean isLeft, int dRow, int dCol){
+
+    /**
+     * I set this private class to public class to use for applying action from server
+     * @param board
+     * @param isLeft
+     * @param dRow
+     * @param dCol
+     */
+    public void movePiece(Board board, boolean isLeft, int dRow, int dCol){
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
         Tetromino moved = piece.moved(dRow,dCol);

@@ -5,7 +5,7 @@ public class ExternalClientTest {
         ExternalClient client = new ExternalClient();
 
 
-        if (client.connect("localhost", 3000)) {
+        if (client.connect()) {
             System.out.println("Connected to server!");
 
 
