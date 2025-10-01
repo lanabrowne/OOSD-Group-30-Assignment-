@@ -63,57 +63,57 @@ public class TetrisConfigView {
         // --- Extended Mode & Two-Player ---
         CheckBox extendedCheckBox = new CheckBox("Extended Mode");
         extendedCheckBox.setSelected(config.extendMode());
+        HBox extendRow = new HBox(10, new Label("Extended Mode:"), extendedCheckBox);
+        extendRow.setAlignment(Pos.CENTER_LEFT);
 
         // Player 1
         Label player1Label = new Label("Player One Type:");
         RadioButton player1Human = new RadioButton("Human");
         RadioButton player1AI = new RadioButton("AI");
+        //ADD EXTERNAL
+        RadioButton player1External = new RadioButton("External");
+
         ToggleGroup player1Group = new ToggleGroup();
         player1Human.setToggleGroup(player1Group);
         player1AI.setToggleGroup(player1Group);
+        player1External.setToggleGroup(player1Group);
         player1Human.setSelected(true);
 
         // Player 2
         Label player2Label = new Label("Player Two Type:");
         RadioButton player2Human = new RadioButton("Human");
         RadioButton player2AI = new RadioButton("AI");
+        //ADD EXTERNAL
+        RadioButton player2External = new RadioButton("External");
+
         ToggleGroup player2Group = new ToggleGroup();
         player2Human.setToggleGroup(player2Group);
         player2AI.setToggleGroup(player2Group);
+        player2External.setToggleGroup(player2Group);
         player2Human.setSelected(true);
 
-        // Player 2 disabled until Extended Mode is checked
-        player2Human.setDisable(!extendedCheckBox.isSelected());
-        player2AI.setDisable(!extendedCheckBox.isSelected());
-        extendedCheckBox.setOnAction(ev -> {
+
+        /**
+         * NEW
+         */
+        VBox playerBox = new VBox(5,
+                player1Label, player1Human, player1AI, player1External,
+                player2Label, player2Human, player2AI, player2External
+                );
+        //Just show 2 players selection only when external mode is selected
+        playerBox.setVisible(extendedCheckBox.isSelected());
+        playerBox.setManaged(extendedCheckBox.isSelected());
+
+
+
+        //When Extended check box switched off, invisible player selection
+        extendedCheckBox.setOnAction(event -> {
             boolean extended = extendedCheckBox.isSelected();
-            player2Human.setDisable(!extended);
-            player2AI.setDisable(!extended);
+            playerBox.setVisible(extended);
+            playerBox.setManaged(extended);
         });
 
-        VBox playerBox = new VBox(5,
-                extendedCheckBox,
-                player1Label, player1Human, player1AI,
-                player2Label, player2Human, player2AI
-        );
 
-        // --- Buttons ---
-        Button playButton = new Button("Play");
-playButton.setPrefWidth(120);
-playButton.setOnAction(ev -> {
-    boolean extended = extendedCheckBox.isSelected();
-    boolean p1Human = player1Human.isSelected();
-    boolean p2Human = player2Human.isSelected();
-
-    if (extended && !p1Human && !p2Human) {
-        // AI vs AI selected → call AI callback
-        twoPlayerAI.run();
-    } else if (extended && p1Human && p2Human) {
-        twoPlayer.run();   // normal two-player
-    } else {
-        singlePlayer.run(); // single-player
-    }
-});
 
 
         Button backButton = new Button("Back");
@@ -123,6 +123,47 @@ playButton.setOnAction(ev -> {
         Button saveButton = new Button("Save");
         saveButton.setPrefWidth(120);
         saveButton.setOnAction(e -> {
+            //The selection of Player 1 (HUMAN, AI, EXTERNAL)
+            PlayerType left;
+            if(player1Human.isSelected())
+            {
+                left = PlayerType.HUMAN;
+            }else if(player1AI.isSelected())
+            {
+                left = PlayerType.AI;
+            }else if(player1External.isSelected())
+            {
+                left = PlayerType.EXTERNAL;
+            }else
+            {
+                //Set HUMAN as default
+                left = PlayerType.HUMAN;
+            }
+
+            //Player 2 selection
+            PlayerType right;
+            if (!extendedCheckBox.isSelected())
+            {
+                //Actually this line wont be used because external is not selected
+                // --> SOLO PLAY
+                right = PlayerType.HUMAN;
+            }else {
+                if(player2Human.isSelected())
+                {
+                    right = PlayerType.HUMAN;
+                }else if(player2AI.isSelected())
+                {
+                    right = PlayerType.AI;
+                }else if(player2External.isSelected())
+                {
+                    right = PlayerType.EXTERNAL;
+                }else
+                {
+                    //Set HUMAN as default
+                    right = PlayerType.HUMAN;
+                }
+            }
+
             TetrisConfig newConfig = new TetrisConfig(
                     (int) sliderWidth.getValue(),
                     (int) sliderHeight.getValue(),
@@ -130,13 +171,16 @@ playButton.setOnAction(ev -> {
                     musicCheckBox.isSelected(),
                     sfxCheckBox.isSelected(),
                     aiCheckBox.isSelected(),
+                    //NEW Saving left, right side screen users
+                    left,
+                    right,
                     extendedCheckBox.isSelected()
             );
             ConfigService.update(newConfig);
             saveNotification();
         });
 
-        HBox buttonBox = new HBox(10, saveButton, backButton, playButton);
+        HBox buttonBox = new HBox(10, saveButton, backButton);
         buttonBox.setAlignment(Pos.CENTER);
 
         // --- Assemble Config Screen ---
@@ -148,6 +192,7 @@ playButton.setOnAction(ev -> {
                 musicRow,
                 sfxRow,
                 aiRow,
+                extendRow,
                 playerBox,
                 buttonBox
         );

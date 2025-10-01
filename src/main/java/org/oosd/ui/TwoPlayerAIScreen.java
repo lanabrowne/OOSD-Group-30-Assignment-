@@ -10,6 +10,7 @@ import javafx.scene.shape.Line;
 
 import org.oosd.Main;
 import org.oosd.controller.AIBoardController;
+import org.oosd.external.ExternalPlayer;
 import org.oosd.model.Board;
 import org.oosd.model.GameBoardAdapter;
 

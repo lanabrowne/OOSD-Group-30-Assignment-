@@ -46,6 +46,8 @@ public final class ConfigService {
                         object.optBoolean("music", false),
                         object.optBoolean("sfx", false),
                         object.optBoolean("aiPlay", false),
+                        PlayerType.valueOf(object.optString("leftPlayer", "HUMAN")),
+                        PlayerType.valueOf(object.optString("rightPlayer", "HUMAN")),
                         object.optBoolean("extendMode", false)
                 );
             }else {
@@ -69,7 +71,9 @@ public final class ConfigService {
                     .put("music", config.music())
                     .put("sfx", config.sfx())
                     .put("aiPlay", config.aiPlay())
-                    .put("extendMode", config.extendMode());
+                    .put("extendMode", config.extendMode())
+                    .put("leftPlayer", config.leftPlayer().name())
+                    .put("rightPlayer", config.rightPlayer().name());
             Files.writeString(filePath, object.toString(2),
                     UTF_8,
                     StandardOpenOption.CREATE,

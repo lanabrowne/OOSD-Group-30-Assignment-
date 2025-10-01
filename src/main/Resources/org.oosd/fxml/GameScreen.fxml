@@ -12,7 +12,8 @@
 <!-- alignment="TOP_CENTER" spacing="10"-->
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="org.oosd.controller.GameController"
-      fx:id="frameCanvas">
+      fx:id="frameCanvas"
+      alignment="CENTER">
 
         <Label text="Play" style="-fx-font-size: 24px;"/>
 

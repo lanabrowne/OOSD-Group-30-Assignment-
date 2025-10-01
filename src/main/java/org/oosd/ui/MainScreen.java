@@ -8,8 +8,11 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.Node;
 import org.oosd.Main;
+import org.oosd.config.ConfigService;
+import org.oosd.config.TetrisConfig;
 
 public class MainScreen implements Screen {
+
 
     private VBox mainScreen;
     private Screen configScreen, highScoreScreen;
@@ -55,7 +58,22 @@ public class MainScreen implements Screen {
         confButton.setOnAction(e -> parent.showScreen(configScreen));
         gameButton.setOnAction(e -> {
             if (parent instanceof Main m) {
-                m.showNewGame(); // calls the helper in Main that builds a new GameScreen
+                /**
+                 * NEW
+                 * to show different game screen depends on user choice,
+                 * create if statement
+                 */
+                //Collect user choice from Jason file
+                TetrisConfig config = ConfigService.get();
+                //If user did not extended mode --> solo play
+                if(!config.extendMode())
+                {
+                    m.showNewGame(); // calls the helper in Main that builds a new GameScreen
+                }else{
+                    //Else --> Two Player mode
+                    m.showTwoPlayerGame();
+                }
+
             }
         });
         highScoresButton.setOnAction(e -> parent.showScreen(highScoreScreen));

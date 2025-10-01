@@ -1,2 +1,7 @@
-package org.oosd.config;public class PlayerType {
+package org.oosd.config;
+
+public enum PlayerType {
+    HUMAN,
+    AI,
+    EXTERNAL
 }
