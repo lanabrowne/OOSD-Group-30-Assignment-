@@ -14,10 +14,14 @@ import java.util.List;
 
 public class ScoreStore {
     private static final ObservableList<PlayerScore> scores = FXCollections.observableArrayList();
-    private static final int MAX_ENTRIES = 15;
+    private static final int MAX_ENTRIES = 10; // ← Top10
 
     public static ObservableList<PlayerScore> getScores() { return scores; }
-    public static void clear() { scores.clear(); }
+
+    public static void clear() {
+        scores.clear();
+        ensurePadded();
+    }
 
     public static class Entry {
         String name;
@@ -25,27 +29,36 @@ public class ScoreStore {
         String config;
     }
 
-    /** リソースのJSONを読み込んで表示用リストに反映（表示専用・保存なし） */
     public static void loadFromJsonResource(String resourcePath) {
         try (InputStream is = ScoreStore.class.getResourceAsStream(resourcePath);
              Reader reader = (is == null ? null : new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            if (reader == null) {
-                System.err.println("JSON not found: " + resourcePath);
-                return;
-            }
-            List<Entry> list = new Gson().fromJson(reader, new TypeToken<List<Entry>>(){}.getType());
 
             scores.clear();
+
+            if (reader == null) {
+                System.err.println("JSON not found: " + resourcePath);
+                ensurePadded();
+                return;
+            }
+
+            List<Entry> list = new Gson().fromJson(reader, new TypeToken<List<Entry>>(){}.getType());
             if (list != null) {
                 for (Entry e : list) {
                     if (e != null) scores.add(new PlayerScore(e.score, e.name, e.config));
                 }
-                // スコア降順＆上位15件
                 scores.sort(Comparator.comparingInt(PlayerScore::getScore).reversed());
                 if (scores.size() > MAX_ENTRIES) scores.remove(MAX_ENTRIES, scores.size());
             }
+            ensurePadded();
         } catch (Exception ex) {
             ex.printStackTrace();
+            scores.clear();
+            ensurePadded();
+        }
+    }
+    private static void ensurePadded() {
+        while (scores.size() < MAX_ENTRIES) {
+            scores.add(PlayerScore.placeholder());
         }
     }
 }

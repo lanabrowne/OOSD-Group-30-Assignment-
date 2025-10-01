@@ -17,39 +17,60 @@ public class GameScoreController {
     @FXML private Button clearButton;
     @FXML private Button backButton;
 
+    private static final String DASH = "—";
+    private static final String JSON_PATH = "/org/oosd/HighScore/JavaTetrisScore.json";
+
     @FXML
     public void initialize() {
-        ScoreStore.loadFromJsonResource("/org.oosd/HighScore/JavaTetrisScore.json");
+        ScoreStore.loadFromJsonResource(JSON_PATH);
 
         nameColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
-        scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));
-        configColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getConfig()));
+        nameColumn.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                PlayerScore ps = empty ? null : getTableRow().getItem();
+                setText((ps == null || ps.isPlaceholder()) ? DASH : item);
+            }
+        });
 
-        rankColumn.setCellValueFactory(cd ->
-                new ReadOnlyObjectWrapper<>(scoreTable.getItems().indexOf(cd.getValue()) + 1)
-        );
+        scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));
+        scoreColumn.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                PlayerScore ps = empty ? null : getTableRow().getItem();
+                setText((ps == null || ps.isPlaceholder()) ? DASH : String.valueOf(item.intValue()));
+            }
+        });
+
+        configColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getConfig()));
+        configColumn.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                PlayerScore ps = empty ? null : getTableRow().getItem();
+                setText((ps == null || ps.isPlaceholder()) ? DASH : item);
+            }
+        });
+
+        rankColumn.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null) { setText(null); return; }
+                PlayerScore ps = getTableRow().getItem();
+                setText((ps == null || ps.isPlaceholder()) ? DASH : String.valueOf(getIndex() + 1));
+            }
+        });
 
         scoreTable.setItems(ScoreStore.getScores());
-        scoreTable.setPlaceholder(new Label("No scores yet"));
 
         clearButton.setOnAction(e -> {
             ScoreStore.clear();
-            scoreTable.refresh();
-
-            ScoreStore.loadFromJsonResource("/org/oosd/HighScore/JavaTetrisScore.json");
-            scoreTable.setItems(ScoreStore.getScores());
             scoreTable.refresh();
         });
 
         if (backButton != null) {
             backButton.setOnAction(e -> {
-                if (main != null) {
-                    main.showScreen(main.getMainScreen());
-                } else {
-                    System.out.println("Back pressed (main not set)");
-                }
+                if (main != null) main.showScreen(main.getMainScreen());
             });
         }
     }
 }
-
