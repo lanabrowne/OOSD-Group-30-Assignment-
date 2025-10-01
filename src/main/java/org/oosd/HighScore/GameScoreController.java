@@ -4,6 +4,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import org.oosd.Main;
+import javafx.beans.binding.Bindings;
 
 public class GameScoreController {
     private Main main;
@@ -63,8 +64,23 @@ public class GameScoreController {
         scoreTable.setItems(ScoreStore.getScores());
 
         clearButton.setOnAction(e -> {
-            ScoreStore.clear();
-            scoreTable.refresh();
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Clear Confirmation");
+            alert.setHeaderText("Clear High Scores");
+            alert.setContentText("Are you sure you want to clear all scores?");
+
+            ButtonType no  = new ButtonType("No",  ButtonBar.ButtonData.NO);
+            ButtonType yes = new ButtonType("Yes", ButtonBar.ButtonData.YES);
+            alert.getButtonTypes().setAll(no, yes);
+            Button yesBtn = (Button) alert.getDialogPane().lookupButton(yes);
+            yesBtn.setDefaultButton(true);
+
+            alert.showAndWait().ifPresent(bt -> {
+                if (bt == yes) {
+                    ScoreStore.clear();
+                    scoreTable.refresh();
+                }
+            });
         });
 
         if (backButton != null) {
@@ -72,5 +88,11 @@ public class GameScoreController {
                 if (main != null) main.showScreen(main.getMainScreen());
             });
         }
+        scoreTable.setFixedCellSize(28);
+        scoreTable.prefHeightProperty().bind(
+                scoreTable.fixedCellSizeProperty().multiply(10 + 1.01)
+        );
+        scoreTable.minHeightProperty().bind(scoreTable.prefHeightProperty());
+        scoreTable.maxHeightProperty().bind(scoreTable.prefHeightProperty());
     }
 }
