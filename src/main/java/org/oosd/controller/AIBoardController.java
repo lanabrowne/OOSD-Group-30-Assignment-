@@ -5,6 +5,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
+import org.oosd.external.ExternalPlayer;
 import org.oosd.model.GameBoardAdapter;
 import org.oosd.model.Move;
 import org.oosd.model.Tetromino;
@@ -17,6 +18,20 @@ public class AIBoardController {
     private final GameBoardAdapter boardAdapter;
     private final Canvas canvas;
     private final TetrisAI ai;
+    //NEW
+    //Current best move
+    private Move pendingMove = null;
+    //Current stage 0 = rotation, 1 = move LEFT/RIGHT, 2 = DOWN
+    private int moveStage = 0;
+
+    private ExternalPlayer external;
+
+
+
+    /**
+     * NEW
+     */
+    private String lastAction;
 
     private static final int BLOCK_SIZE = 30;
 
@@ -41,36 +56,86 @@ public class AIBoardController {
         Tetromino current = boardAdapter.getCurrentPiece();
         Tetromino next = boardAdapter.getNextPiece();
 
-        Move move = ai.findBestMove(
-                boardAdapter.getGrid(),
-                boardAdapter.getHeight(),
-                boardAdapter.getWidth(),
-                current,
-                next
-        );
+        if(current == null) return true;
 
-        if (move != null) {
-            boardAdapter.rotateTo(move.rotation);
-            boardAdapter.moveToColumn(move.col);
+        //To collect AI action one by one
+        if(pendingMove == null)
+        {
+            //if pendingMove is not set yet, calculate optimize action
+            pendingMove = ai.findBestMove(
+                    boardAdapter.getGrid(),
+                    boardAdapter.getHeight(),
+                    boardAdapter.getWidth(),
+                    current,
+                    next
+            );
+            //reset move stafe
+            moveStage = 0;
         }
 
-        boolean gameOver = boardAdapter.step();
 
-        if (gameOver) {
-            System.out.println("Game Over!");
+        //NEW
+        //Initialize last action
+        String action = null;
+
+        if (pendingMove != null) {
+            switch (moveStage) {
+                case 0: // Rotation
+                    if (current.rotation != pendingMove.rotation) {
+                        //  the number of rotation that AI set
+                        boardAdapter.rotateTo(pendingMove.rotation);
+                        action = "ROTATE"; // the command that sent to server
+                    }
+                    //move to next stage
+                    moveStage++;
+                    break;
+
+                case 1: //move left/right
+                    if (current.col < pendingMove.col) {
+                        // current col < new col -> right
+                        boardAdapter.moveToColumn(current.col + 1);
+                        action = "RIGHT";
+                    } else if (current.col > pendingMove.col) {
+                        // current col > new col -> left
+                        boardAdapter.moveToColumn(current.col - 1);
+                        action = "LEFT";
+                    }
+                    // move next stage
+                    moveStage++;
+                    break;
+
+                case 2: // down
+                    boolean gameOver = boardAdapter.step();
+                    action = "DOWN"; //send down to server
+                    if (gameOver) {
+                        System.out.println("Game Over!");
+                        return true;
+                    }
+                    // reset to calculate next cycle
+                    pendingMove = null;
+                    break;
+            }
         }
+
+        // send to server when external is activated
+        if (action != null && external != null && external.isConnected()) {
+            external.sendAction(action);
+        }
+
 
         render();
-        return gameOver;
+
+        //game still working so return false
+        return false;
     }
 
     public void render() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
-int boardPixelWidth = boardAdapter.getWidth() * BLOCK_SIZE;
-int boardPixelHeight = boardAdapter.getHeight() * BLOCK_SIZE;
+        int boardPixelWidth = boardAdapter.getWidth() * BLOCK_SIZE;
+        int boardPixelHeight = boardAdapter.getHeight() * BLOCK_SIZE;
 
-gc.setFill(Color.BLACK);
-gc.fillRect(0, 0, boardPixelWidth, boardPixelHeight);
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, boardPixelWidth, boardPixelHeight);
 
 
         gc.setStroke(Color.DARKGRAY);
@@ -121,5 +186,13 @@ gc.fillRect(0, 0, boardPixelWidth, boardPixelHeight);
             case 7 -> Color.RED;
             default -> Color.GRAY;
         };
+    }
+
+    /**
+     * NEW
+     */
+    public String getLastAction()
+    {
+        return lastAction;
     }
 }

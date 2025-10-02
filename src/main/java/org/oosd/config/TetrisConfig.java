@@ -10,12 +10,25 @@ public record TetrisConfig(
         boolean music,
         boolean sfx,
         boolean aiPlay,
+        //To set right left game board player type,
+        //use enum class of player type
+        PlayerType leftPlayer,
+        PlayerType rightPlayer,
+
         boolean extendMode
 ){
     //Create default setting when user open the application
     public static TetrisConfig defaults()
     {
-        return new TetrisConfig(10,20,5,false, false, false, false);
+        return new TetrisConfig(
+                10,20,5,
+                false,
+                false,
+                false,
+                PlayerType.HUMAN,
+                PlayerType.HUMAN,
+                false
+        );
     }
 
 }

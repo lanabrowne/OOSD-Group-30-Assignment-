@@ -1,5 +1,6 @@
 package org.oosd.controller;
 
+
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -10,24 +11,39 @@ import javafx.scene.paint.Color;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.stage.Stage;
 import org.oosd.config.ConfigService;
+import org.oosd.config.PlayerType;
 import org.oosd.config.TetrisConfig;
 import org.oosd.external.ExternalClient;
+import org.oosd.external.ExternalPlayer;
 import org.oosd.model.Board;
+import org.oosd.model.GameBoardAdapter;
 import org.oosd.model.Tetromino;
 import org.oosd.ui.Frame;
 import org.oosd.ui.Screen;
+
+
+import java.awt.geom.Rectangle2D;
+
+
 
 public class TwoPlayerController implements Screen {
 
     TetrisConfig config = ConfigService.get();
 
     //Implement external client into both side player screen
-    private ExternalClient externalLeft;
-    private ExternalClient externalRight;
+    private ExternalPlayer externalLeft;
+    private ExternalPlayer externalRight;
+
+    //To migrate AI board that is created by Ria, set AI Board controller in here
+    private AIBoardController aiLeft;
+    private AIBoardController aiRight;
+
+
 
     //Initialize external client
-    public void setExternalClients (ExternalClient left, ExternalClient right)
+    public void setExternalClients (ExternalPlayer left, ExternalPlayer right)
     {
         this.externalLeft = left;
         this.externalRight = right;
@@ -65,8 +81,20 @@ public class TwoPlayerController implements Screen {
     private Frame parentFrame;
 
     // tickleft/right moves the players pieces down by one tick
-    private void tickLeft() {tick(boardLeft, true);}
-    private void tickRight() {tick(boardRight, false);}
+    private void tickLeft() {
+        if(aiLeft != null)
+        {
+            aiLeft.step();
+        }
+        tick(boardLeft, true);
+    }
+    private void tickRight() {
+        if(aiRight != null)
+        {
+            aiRight.step();
+        }
+        tick(boardRight, false);
+    }
 
     private int scoreLeftValue = 0;
     private int scoreRightValue = 0;
@@ -90,6 +118,69 @@ public class TwoPlayerController implements Screen {
         boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
         boardRight = new Board(config.fieldWidth(), config.fieldHeight());
 
+        HBox.setHgrow(leftColumn, Priority.ALWAYS);
+        HBox.setHgrow(rightColumn, Priority.ALWAYS);
+
+        int blockSize = 25;
+        gameCanvasLeft.setWidth(boardLeft.w * blockSize);
+        gameCanvasLeft.setHeight((boardLeft.h - hiddenRows) * blockSize);
+
+        gameCanvasRight.setWidth(boardRight.w * blockSize);
+        gameCanvasRight.setHeight((boardRight.h - hiddenRows) * blockSize);
+
+
+        Platform.runLater(() -> {
+            javafx.stage.Screen fxScreen = javafx.stage.Screen.getPrimary();
+            javafx.geometry.Rectangle2D bounds = fxScreen.getVisualBounds();
+
+            double screenW = bounds.getWidth() * 0.9;
+            double screenH = bounds.getHeight() * 0.9;
+
+            // VBox root のサイズを基準にする
+            double actualW = frameCanvas.getLayoutBounds().getWidth();
+            double actualH = frameCanvas.getLayoutBounds().getHeight();
+
+            if (actualW == 0 || actualH == 0) {
+                System.out.println("⚠ サイズ未確定 → 再実行必要");
+                return;
+            }
+
+            double scaleX = screenW / actualW;
+            double scaleY = screenH / actualH;
+            double scale = Math.min(1.0, Math.min(scaleX, scaleY));
+
+            frameCanvas.setScaleX(scale);
+            frameCanvas.setScaleY(scale);
+
+            System.out.println("✅ Frame area scaled: " + scale + " (W=" + actualW + ", H=" + actualH + ")");
+        });
+
+
+        //frameCanvas.setPrefWidth(boardLeft.w * blockSize + boardRight.w * blockSize + 400);
+
+        //Set player type (LEFT side)
+        if(config.leftPlayer() == PlayerType.AI)
+        {
+            aiLeft = new AIBoardController(new GameBoardAdapter(boardLeft), gameCanvasLeft);
+
+        }else if(config.leftPlayer() == PlayerType.EXTERNAL)
+        {
+            externalLeft = new ExternalPlayer(this, true);
+            //When external is selected, set externalPlayer class to connect with server
+            externalLeft.connectToServer();
+        }
+
+
+        //Set RIGHT side player type
+        if(config.rightPlayer() == PlayerType.AI)
+        {
+            aiRight = new AIBoardController(new GameBoardAdapter(boardRight), gameCanvasLeft);
+        } else if(config.rightPlayer() == PlayerType.EXTERNAL)
+        {
+            externalRight = new ExternalPlayer(this,false);
+            externalRight.connectToServer();
+        }
+
         // UI
         scoreLeft.setText("Score: 0");
         scoreRight.setText("Score: 0");
@@ -108,6 +199,7 @@ public class TwoPlayerController implements Screen {
         setupTimer();
     }
 
+
     public void setParent(Frame frame){
         this.parentFrame = frame;
     }
@@ -123,14 +215,39 @@ public class TwoPlayerController implements Screen {
                 long elapsedLeft = (now - lastTickLeft) / 1_000_000L;
                 long elapsedRight = (now - lastTickRight) / 1_000_000L;
 
+                //Check external input
+                if(externalLeft != null)
+                {
+                    externalLeft.processServerInput();
+                }
+                if(externalRight != null)
+                {
+                    externalRight.processServerInput();
+                }
+
+                // Check AI action
+                if(aiLeft != null)
+                {
+                    aiLeft.step();
+                }
+                if(aiRight != null)
+                {
+                    aiRight.step();
+                }
+
                 if (elapsedLeft >= dropIntervalMs) {
+                    if (aiLeft != null)
+                        aiLeft.step();
                     tickLeft();
                     lastTickLeft = now;
                 }
                 if (elapsedRight >= dropIntervalMs) {
+                    if (aiRight != null) aiRight.step();
                     tickRight();
                     lastTickRight = now;
                 }
+
+                renderBothBoards();
             }
         };
         timer.start();
@@ -143,6 +260,38 @@ public class TwoPlayerController implements Screen {
     if a new piece cannot be placed, end game
      */
     private void tick(Board board, boolean isLeft) {
+
+        //WHEN Player --> AI
+        //LEFT SCREEN
+        if(isLeft && aiLeft != null)
+        {
+            //set one action & send to server
+            aiLeft.step();
+            return;
+        }
+        //RIGHT SCREEN
+        if(!isLeft && aiRight != null)
+        {
+            aiRight.step();
+            return;
+        }
+
+        //WHEN Player --> EXTERNAL
+        if(isLeft && externalLeft != null)
+        {
+            //receive action from server and make action
+            externalLeft.processServerInput();
+            return;
+        }
+        if(!isLeft && externalRight != null)
+        {
+            externalRight.processServerInput();
+            return;
+        }
+
+
+
+        //BELOW --> When player is USER
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
 
@@ -233,7 +382,7 @@ public class TwoPlayerController implements Screen {
                 if(externalLeft != null && externalLeft.isConnected())
                 {
                     //Send left command to server
-                    externalLeft.sendCommand("LEFT");
+                    externalLeft.sendAction("LEFT");
                 }
             }
             case D -> {
@@ -242,7 +391,7 @@ public class TwoPlayerController implements Screen {
                 if(externalLeft != null && externalLeft.isConnected())
                 {
                     //Send right command to server
-                    externalLeft.sendCommand("RIGHT");
+                    externalLeft.sendAction("RIGHT");
                 }
             }
             case W -> {
@@ -251,7 +400,7 @@ public class TwoPlayerController implements Screen {
                 if(externalLeft != null && externalLeft.isConnected())
                 {
                     //Send rotate command to server
-                    externalLeft.sendCommand("ROTATE");
+                    externalLeft.sendAction("ROTATE");
                 }
             }
             case S -> {
@@ -260,7 +409,7 @@ public class TwoPlayerController implements Screen {
                 if(externalLeft != null && externalLeft.isConnected())
                 {
                     //Send down command to server
-                    externalLeft.sendCommand("DOWN");
+                    externalLeft.sendAction("DOWN");
                 }
             }
 
@@ -271,7 +420,7 @@ public class TwoPlayerController implements Screen {
                 if(externalRight != null && externalRight.isConnected())
                 {
                     //Send left command to server
-                    externalRight.sendCommand("LEFT");
+                    externalRight.sendAction("LEFT");
                 }
             }
             case RIGHT -> {
@@ -280,7 +429,7 @@ public class TwoPlayerController implements Screen {
                 if(externalRight != null && externalRight.isConnected())
                 {
                     //Send right command to server
-                    externalRight.sendCommand("RIGHT");
+                    externalRight.sendAction("RIGHT");
                 }
             }
 
@@ -290,7 +439,7 @@ public class TwoPlayerController implements Screen {
                 if(externalRight != null && externalRight.isConnected())
                 {
                     //Send rotate command to server
-                    externalRight.sendCommand("ROTATE");
+                    externalRight.sendAction("ROTATE");
                 }
             }
             case DOWN ->{
@@ -299,7 +448,7 @@ public class TwoPlayerController implements Screen {
                 if(externalRight != null && externalRight.isConnected())
                 {
                     //Send down command to server
-                    externalRight.sendCommand("DOWN");
+                    externalRight.sendAction("DOWN");
                 }
             }
 

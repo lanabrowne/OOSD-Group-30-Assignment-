@@ -5,5 +5,7 @@
   "fieldHeight": 25,
   "gameLevel": 7,
   "extendMode": false,
-  "aiPlay": false
+  "aiPlay": false,
+  "leftPlayer" : "HUMAN",
+  "rightPlayer" : "HUMAN"
 }

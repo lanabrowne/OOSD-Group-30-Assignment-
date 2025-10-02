@@ -33,6 +33,9 @@ public class ExternalPlayer {
         return client.connect();
     }
 
+    public boolean isConnected() {
+        return client.isConnected();
+    }
     public void processServerInput()
     {
         if(!client.isConnected())
@@ -48,7 +51,7 @@ public class ExternalPlayer {
         }
 
         //Reflect the received command from server into game board
-        //controller.processCommand(cmd);
+        controller.processCommand(command, isLeft);
     }
 
     //send my action to server (This one will be used only network connection for p vs p)
@@ -60,25 +63,7 @@ public class ExternalPlayer {
         }
     }
 
-    /**
-     * This method is executing commands which is received from server
-     * into game controller.
-     * @param cmd
-     */
-    public void processCommand(String cmd)
-    {
-        //if the inside of command is empty null, return and show the msg
-        if(cmd == null)
-        {
-            System.out.println("Error of process. Cmd is null.");
-            return;
-        }
 
-        //Just for checking sending command
-        System.out.println("Command sending success. Sending command to controller." +
-                "Command: " + cmd);
-        controller.processCommand(cmd, isLeft);
-    }
 
     //Shut down from server
     public void disconnect()

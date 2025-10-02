@@ -127,7 +127,7 @@ public class ExternalClient {
         //action
         if(player != null)
         {
-            player.processCommand(msg);
+            player.processServerInput();
         }
     }
 
