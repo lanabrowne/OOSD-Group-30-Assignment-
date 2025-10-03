@@ -19,6 +19,9 @@ import org.oosd.model.*;
 import org.oosd.sound.SoundEffects;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
+import javafx.scene.control.Label;
+
+import java.awt.*;
 
 public class GameController {
 
@@ -37,8 +40,12 @@ public class GameController {
     private boolean aiMoveExecuted = false;
 
     private long lastDropNs = 0;
+    private int score = 0;
 
     private ExternalPlayer externalClient;
+
+    @FXML
+    private Label lblScore;
 
     /**
      * This is the number of hiding lines for the spawn. So that
@@ -195,7 +202,13 @@ public class GameController {
      */
     private void lockAndNext() {
         board.lock(current);
-        board.clearFullLines();
+
+        //capture how many lines were cleared
+        int lines_cleared = board.clearFullLines();
+        if(lines_cleared > 0) {
+            //Update scoring
+            addScore(lines_cleared);
+        }
         downPressed = false;
 
         if (!spawnNext()) {
@@ -483,6 +496,24 @@ public class GameController {
         loop.stop();
         HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
         parent.showScreen(highScoreScreen);
+    }
+
+    //functions for score
+    public int getScore() {
+        return score;
+    }
+    private void addScore(int linesCleared) {
+        switch (linesCleared) {
+            case 1 -> score += 100;
+            case 2 -> score += 300;
+            case 3 -> score += 500;
+            case 4 -> score += 800; // Tetris
+        }
+        updateScoreLabel();
+    }
+
+    private void updateScoreLabel() {
+        lblScore.setText("Score: " + score);
     }
 
     // Getters for AI
