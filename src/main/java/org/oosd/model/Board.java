@@ -50,7 +50,6 @@ public class Board {
                 }
                 // Clear top row
                 Arrays.fill(grid[0], 0);
-                cleared++;
                 row--; // we're rechecking the same row
             }
         }
