@@ -3,10 +3,9 @@ package org.oosd.ui;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import org.oosd.Main;
-import org.oosd.HighScore.GameScoreController;
+import org.oosd.controller.GameScoreController;
 
 import java.net.URL;
-import java.util.Objects;
 
 public class HighScoreScreen implements Screen {
     private final Main main;
@@ -27,7 +26,7 @@ public class HighScoreScreen implements Screen {
             GameScoreController controller = loader.getController();
             if (controller == null) {
                 throw new IllegalStateException("Controller is null. " +
-                        "Make sure fx:controller=\"org.oosd.HighScore.GameScoreController\" is set in FXML.");
+                        "Make sure fx:controller=\"org.oosd.controller.GameScoreController\" is set in FXML.");
             }
             controller.setMain(main);
             return root;
