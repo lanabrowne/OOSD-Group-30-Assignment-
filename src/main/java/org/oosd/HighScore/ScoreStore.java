@@ -123,5 +123,5 @@ public class ScoreStore {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    };
 }
