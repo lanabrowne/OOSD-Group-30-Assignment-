@@ -20,8 +20,12 @@ import org.oosd.sound.SoundEffects;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
 import javafx.scene.control.Label;
-
-import java.awt.*;
+import org.oosd.HighScore.HighScoreWriter;
+import org.oosd.HighScore.ConfigTagUtil;
+import javafx.scene.control.TextInputDialog;
+import java.util.Optional;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 
 public class GameController {
 
@@ -43,6 +47,10 @@ public class GameController {
     private int score = 0;
 
     private ExternalPlayer externalClient;
+
+    private boolean scoreSaved = false;
+    private boolean gameOver = false;
+    private boolean nameDialogShowing = false;
 
     @FXML
     private Label lblScore;
@@ -90,7 +98,7 @@ public class GameController {
     private final AnimationTimer loop = new AnimationTimer() {
         @Override
         public void handle(long now) {
-            if (paused) return;
+            if (paused || gameOver) return;
 
             if (lastDropNs == 0) lastDropNs = now;
 
@@ -107,17 +115,19 @@ public class GameController {
             if (elapsedMs >= interval) {
                 stepGravity();
                 lastDropNs = now;
+                if (gameOver) return;
             }
 
-            render();
+            if (!gameOver) render();
         }
     };
 
     @FXML
     public void initialize() {
+        org.oosd.config.ConfigService.load();
         TetrisConfig config = ConfigService.get();
         int blockSize = 30; // Pixels per block
-        this.board = new Board(config.fieldWidth(), config.fieldHeight());
+        this.board = new Board(config.fieldWidth(), config.fieldHeight() + HIDDEN_ROWS);
         System.out.println("Board Width = "+ board.w);
         this.aiPlay = config.aiPlay();
 
@@ -134,9 +144,10 @@ public class GameController {
     }
 
     private void calculateCellSize() {
+        int visibleH = board.h - HIDDEN_ROWS;
         cellSize = Math.min(
                 gameCanvas.getWidth() / board.w,
-                gameCanvas.getHeight() / board.h
+                gameCanvas.getHeight() / visibleH
         );
     }
 
@@ -183,12 +194,22 @@ public class GameController {
     /**
      * Start a new game
      */
-    public void startGame() {
+    public void startGame(){
+        gameOver = false;
+        scoreSaved = false;
+        nameDialogShowing = false;
+        downPressed = false;
+        score = 0;
+        updateScoreLabel();
+
+        board = new Board(board.w, board.h);
+
         current = null;
         next = null;
         spawnFirst();
         loop.start();
     }
+
 
     /**
      * Moves current piece down by one. Locks if cannot move further
@@ -212,8 +233,7 @@ public class GameController {
         downPressed = false;
 
         if (!spawnNext()) {
-            loop.stop();
-            drawGameOver();
+            endGame();
         }
     }
 
@@ -318,6 +338,9 @@ public class GameController {
     /**
      * Renders board and current piece
      */
+    /**
+     * Renders board and current piece
+     */
     private void render() {
         gc.clearRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
@@ -325,13 +348,15 @@ public class GameController {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-        // Draw board
         int[][] snap = board.snapshot();
-        for (int r = 0; r < board.h; r++) {
+        int visibleH = board.h - HIDDEN_ROWS;
+
+        // Draw board
+        for (int r = HIDDEN_ROWS; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
                 if (snap[r][c] != 0) {
                     gc.setFill(PALETTE[snap[r][c]]);
-                    gc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                    gc.fillRect(c * cellSize, (r - HIDDEN_ROWS) * cellSize, cellSize, cellSize);
                 }
             }
         }
@@ -341,13 +366,19 @@ public class GameController {
         for (int[] cell : current.cells()) {
             int r = current.row + cell[1];
             int c = current.col + cell[0];
-            gc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            if (r >= HIDDEN_ROWS) {
+                gc.fillRect(c * cellSize, (r - HIDDEN_ROWS) * cellSize, cellSize, cellSize);
+            }
         }
 
         // Draw grid
         gc.setStroke(Color.web("#222"));
-        for (int x = 0; x <= board.w; x++) gc.strokeLine(x * cellSize, 0, x * cellSize, gameCanvas.getHeight());
-        for (int y = 0; y <= board.h; y++) gc.strokeLine(0, y * cellSize, board.w * cellSize, y * cellSize);
+        for (int x = 0; x <= board.w; x++) {
+            gc.strokeLine(x * cellSize, 0, x * cellSize, visibleH * cellSize);
+        }
+        for (int y = 0; y <= visibleH; y++) {
+            gc.strokeLine(0, y * cellSize, board.w * cellSize, y * cellSize);
+        }
     }
 
     /**
@@ -426,7 +457,6 @@ public class GameController {
      *     }
      */
 
-
     //Create command action method to pass the command to external
     public void processCommand(String command)
     {
@@ -445,15 +475,8 @@ public class GameController {
         }
     }
 
-
     // Class-level paused flag
-// Class-level paused flag
-
-
-
-
-
-
+    // Class-level paused flag
 
     public void resetGame() {
         // Stop current game loop
@@ -468,6 +491,38 @@ public class GameController {
         gc.setFont(Font.font(16));
         gc.fillText("Press any arrow key to start", gameCanvas.getWidth() / 2 - 100,
                 gameCanvas.getHeight() / 2 + 20);
+    }
+
+
+    private void endGame() {
+        if (gameOver) return;
+        gameOver = true;
+        loop.stop();
+
+        drawGameOver();
+
+        if (scoreSaved || nameDialogShowing) return;
+        nameDialogShowing = true;
+
+        final int finalScore = score;
+        final String defaultName = "Player";
+
+        javafx.application.Platform.runLater(() ->
+                javafx.application.Platform.runLater(() -> {
+                    TextInputDialog d = new TextInputDialog(defaultName);
+                    d.setTitle("High Score");
+                    d.setHeaderText("Enter your name");
+                    d.setContentText("Name:");
+                    d.setOnHidden(e -> {
+                        String name = d.getResult();
+                        if (name == null || name.trim().isEmpty()) name = defaultName;
+                        saveHighScore(finalScore, name);
+                        scoreSaved = true;
+                        nameDialogShowing = false;
+                    });
+                    d.show();
+                })
+        );
     }
 
     /**
@@ -523,5 +578,22 @@ public class GameController {
 
     public void setParent(Frame parent) {
         this.parent = parent;
+    }
+
+    private void saveHighScore(int finalScore, String playerName) {
+        ConfigService.load();
+        TetrisConfig cfg = ConfigService.get();
+        String configTag = ConfigTagUtil.makeTagFrom(cfg);
+
+        HighScoreWriter.append(playerName, finalScore, configTag);
+    }
+
+    private String promptName(String defaultName) {
+        TextInputDialog d = new TextInputDialog(defaultName);
+        d.setTitle("High Score");
+        d.setHeaderText("Enter your name");
+        d.setContentText("Name:");
+        Optional<String> r = d.showAndWait();
+        return r.map(String::trim).filter(s -> !s.isEmpty()).orElse(defaultName);
     }
 }

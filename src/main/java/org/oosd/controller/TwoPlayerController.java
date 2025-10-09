@@ -1,6 +1,5 @@
 package org.oosd.controller;
 
-
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -11,22 +10,23 @@ import javafx.scene.paint.Color;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.stage.Stage;
+// config & model
 import org.oosd.config.ConfigService;
 import org.oosd.config.PlayerType;
 import org.oosd.config.TetrisConfig;
-import org.oosd.external.ExternalClient;
 import org.oosd.external.ExternalPlayer;
 import org.oosd.model.Board;
 import org.oosd.model.GameBoardAdapter;
 import org.oosd.model.Tetromino;
+// ui
 import org.oosd.ui.Frame;
 import org.oosd.ui.Screen;
-
-
-import java.awt.geom.Rectangle2D;
-
-
+// ★ added: highscore & dialog & navigation
+import javafx.scene.control.TextInputDialog;
+import org.oosd.HighScore.HighScoreWriter;
+import org.oosd.HighScore.ConfigTagUtil;
+import org.oosd.ui.HighScoreScreen;
+import org.oosd.Main;
 
 public class TwoPlayerController implements Screen {
 
@@ -40,17 +40,14 @@ public class TwoPlayerController implements Screen {
     private AIBoardController aiLeft;
     private AIBoardController aiRight;
 
-
-
     //Initialize external client
     public void setExternalClients (ExternalPlayer left, ExternalPlayer right)
     {
         this.externalLeft = left;
         this.externalRight = right;
     }
-    @FXML
-    //from TwoPlayerScreen.fxml
-    private VBox leftColumn;
+
+    @FXML private VBox leftColumn;   //from TwoPlayerScreen.fxml
     @FXML private VBox rightColumn;
     @FXML private GridPane leftGrid;
     @FXML private GridPane rightGrid;
@@ -61,12 +58,15 @@ public class TwoPlayerController implements Screen {
     @FXML private Canvas gameCanvasLeft;
     @FXML private Canvas gameCanvasRight;
 
-
-
     private Board boardLeft;
     private Board boardRight;
     private Tetromino currentPieceLeft;
     private Tetromino currentPieceRight;
+
+    // --- game over / dialog flags (keep single definition) ---
+    private boolean gameOver = false;          // set true when match ends
+    private boolean nameDialogShowing = false; // prevent double dialogs
+    private boolean scoresSaved = false;       // prevent double writes
 
     private static final int hiddenRows = 4;
 
@@ -75,7 +75,6 @@ public class TwoPlayerController implements Screen {
     private double dropIntervalMs = 600;
 
     private boolean paused = false;
-    private boolean gameOver = false;
 
     private AnimationTimer timer;
     private Frame parentFrame;
@@ -128,7 +127,6 @@ public class TwoPlayerController implements Screen {
         gameCanvasRight.setWidth(boardRight.w * blockSize);
         gameCanvasRight.setHeight((boardRight.h - hiddenRows) * blockSize);
 
-
         Platform.runLater(() -> {
             javafx.stage.Screen fxScreen = javafx.stage.Screen.getPrimary();
             javafx.geometry.Rectangle2D bounds = fxScreen.getVisualBounds();
@@ -136,12 +134,11 @@ public class TwoPlayerController implements Screen {
             double screenW = bounds.getWidth() * 0.9;
             double screenH = bounds.getHeight() * 0.9;
 
-            // VBox root のサイズを基準にする
             double actualW = frameCanvas.getLayoutBounds().getWidth();
             double actualH = frameCanvas.getLayoutBounds().getHeight();
 
             if (actualW == 0 || actualH == 0) {
-                System.out.println("⚠ サイズ未確定 → 再実行必要");
+                System.out.println("Layout not ready yet — retry later");
                 return;
             }
 
@@ -155,9 +152,6 @@ public class TwoPlayerController implements Screen {
             System.out.println("✅ Frame area scaled: " + scale + " (W=" + actualW + ", H=" + actualH + ")");
         });
 
-
-        //frameCanvas.setPrefWidth(boardLeft.w * blockSize + boardRight.w * blockSize + 400);
-
         //Set player type (LEFT side)
         if(config.leftPlayer() == PlayerType.AI)
         {
@@ -170,11 +164,11 @@ public class TwoPlayerController implements Screen {
             externalLeft.connectToServer();
         }
 
-
         //Set RIGHT side player type
         if(config.rightPlayer() == PlayerType.AI)
         {
-            aiRight = new AIBoardController(new GameBoardAdapter(boardRight), gameCanvasLeft);
+            // ★ fixed: right AI should use gameCanvasRight
+            aiRight = new AIBoardController(new GameBoardAdapter(boardRight), gameCanvasRight);
         } else if(config.rightPlayer() == PlayerType.EXTERNAL)
         {
             externalRight = new ExternalPlayer(this,false);
@@ -198,7 +192,6 @@ public class TwoPlayerController implements Screen {
         renderBothBoards();
         setupTimer();
     }
-
 
     public void setParent(Frame frame){
         this.parentFrame = frame;
@@ -289,8 +282,6 @@ public class TwoPlayerController implements Screen {
             return;
         }
 
-
-
         //BELOW --> When player is USER
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
@@ -351,7 +342,7 @@ public class TwoPlayerController implements Screen {
     private void initialSpawnBoth(){
         currentPieceLeft = spawnFor(boardLeft);
         currentPieceRight = spawnFor(boardRight);
-   }
+    }
 
     // create a new random tetromino
     // positioned at the centre of the board
@@ -360,7 +351,7 @@ public class TwoPlayerController implements Screen {
         t.row = 0;
         t.col = board.w/2-1;
         return t;
-   }
+    }
 
     /*
     handle player input -> WASD for player 1 & Arrows for player 2
@@ -479,7 +470,6 @@ public class TwoPlayerController implements Screen {
         }
     }
 
-
     // attempt to move the current tetromino by the given row (dRow) and column (dCol)
 
     /**
@@ -569,8 +559,8 @@ public class TwoPlayerController implements Screen {
     public void focusGame(){
         Platform.runLater(() -> {
             if (leftColumn != null) {
-               leftColumn.setFocusTraversable(true);
-               leftColumn.requestFocus();
+                leftColumn.setFocusTraversable(true);
+                leftColumn.requestFocus();
             }
         });
     }
@@ -587,6 +577,71 @@ public class TwoPlayerController implements Screen {
     private void endGame(String msg) {
         if (timer != null) timer.stop();
         lblWinner.setText(msg);
+
+        if (scoresSaved || nameDialogShowing) return;
+        nameDialogShowing = true;
+
+        final int finalLeftScore  = scoreLeftValue;
+        final int finalRightScore = scoreRightValue;
+        final String defaultLeft  = "Left Player";
+        final String defaultRight = "Right Player";
+
+        Platform.runLater(() -> {
+            // wrapper so the inner lambda can read it (must be effectively final)
+            final String[] leftNameBox = new String[1];
+
+            TextInputDialog d1 = new TextInputDialog(defaultLeft);
+            d1.setTitle("High Score");
+            d1.setHeaderText("Left player name?");
+            d1.setContentText("Name:");
+            d1.setOnHidden(e1 -> {
+                String leftName = d1.getResult();
+                if (leftName == null || leftName.trim().isEmpty()) leftName = defaultLeft;
+                leftNameBox[0] = leftName;
+
+                TextInputDialog d2 = new TextInputDialog(defaultRight);
+                d2.setTitle("High Score");
+                d2.setHeaderText("Right player name?");
+                d2.setContentText("Name:");
+                d2.setOnHidden(e2 -> {
+                    String rightName = d2.getResult();
+                    if (rightName == null || rightName.trim().isEmpty()) rightName = defaultRight;
+
+                    // snapshot config ONCE per match
+                    ConfigService.load();
+                    TetrisConfig cfg = ConfigService.get();
+                    String tag = ConfigTagUtil.makeTagFrom(cfg);
+
+                    HighScoreWriter.append(leftNameBox[0], finalLeftScore, tag);
+                    HighScoreWriter.append(rightName,      finalRightScore, tag);
+
+                    scoresSaved = true;
+                    nameDialogShowing = false;
+
+                    // jump to High Score screen (same動線 as 1P)
+                    if (parentFrame != null) {
+                        parentFrame.showScreen(new HighScoreScreen((Main) parentFrame));
+                    }
+                });
+                d2.show();
+            });
+            d1.show();
+        });
+    }
+
+    // --- small helper to draw "GAME OVER" on both canvases (visual feedback before dialogs) ---
+    private void overlayGameOver() {
+        drawOverlayOnCanvas(gameCanvasLeft,  "GAME OVER");
+        drawOverlayOnCanvas(gameCanvasRight, "GAME OVER");
+    }
+    private void drawOverlayOnCanvas(Canvas canvas, String text) {
+        if (canvas == null) return;
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.rgb(0,0,0,0.7));
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gc.setFill(Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font(32));
+        gc.fillText(text, canvas.getWidth()/2 - 90, canvas.getHeight()/2);
     }
 
     private void renderBothBoards() {
@@ -614,8 +669,7 @@ public class TwoPlayerController implements Screen {
                 gc.setStroke(Color.web("#222"));
                 gc.strokeRect(c * blockSize, (r - hiddenRows) * blockSize, blockSize, blockSize);
             }
-
-    }
+        }
         //draw the current falling piece
         if (piece != null) {
             Color colour = PALETTE[piece.type.colorId];
@@ -635,7 +689,6 @@ public class TwoPlayerController implements Screen {
         }
     }
 
-
     @Override
     public Parent getScreen() {
         return leftColumn != null ? leftColumn.getScene().getRoot() : null;
@@ -643,4 +696,12 @@ public class TwoPlayerController implements Screen {
 
     @Override
     public void setRoute(String path, Screen screen) {}
+
+    // --- utility ---
+    private void goToHighScoreScreen() {
+        if (parentFrame != null) {
+            HighScoreScreen screen = new HighScoreScreen((Main) parentFrame);
+            parentFrame.showScreen(screen);
+        }
+    }
 }
