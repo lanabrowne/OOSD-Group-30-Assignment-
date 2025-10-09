@@ -1,16 +1,23 @@
 package org.oosd.controller;
 
 import javafx.animation.AnimationTimer;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.Parent;
-import javafx.scene.control.Label;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-// config & model
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.util.Duration;
+
+import org.oosd.Main;
 import org.oosd.config.ConfigService;
 import org.oosd.config.PlayerType;
 import org.oosd.config.TetrisConfig;
@@ -18,227 +25,215 @@ import org.oosd.external.ExternalPlayer;
 import org.oosd.model.Board;
 import org.oosd.model.GameBoardAdapter;
 import org.oosd.model.Tetromino;
-// ui
 import org.oosd.ui.Frame;
 import org.oosd.ui.Screen;
-// ★ added: highscore & dialog & navigation
-import javafx.scene.control.TextInputDialog;
+import org.oosd.ui.HighScoreScreen;
+
 import org.oosd.HighScore.HighScoreWriter;
 import org.oosd.HighScore.ConfigTagUtil;
-import org.oosd.ui.HighScoreScreen;
-import org.oosd.Main;
 
 public class TwoPlayerController implements Screen {
 
-    TetrisConfig config = ConfigService.get();
-
-    //Implement external client into both side player screen
+    // -------- Players / Config --------
+    private final TetrisConfig config = ConfigService.get();
     private ExternalPlayer externalLeft;
     private ExternalPlayer externalRight;
-
-    //To migrate AI board that is created by Ria, set AI Board controller in here
     private AIBoardController aiLeft;
     private AIBoardController aiRight;
 
-    //Initialize external client
-    public void setExternalClients (ExternalPlayer left, ExternalPlayer right)
-    {
+    public void setExternalClients(ExternalPlayer left, ExternalPlayer right) {
         this.externalLeft = left;
         this.externalRight = right;
     }
 
-    @FXML private VBox leftColumn;   //from TwoPlayerScreen.fxml
+    // -------- FXML --------
+    @FXML private VBox leftColumn;
     @FXML private VBox rightColumn;
-    @FXML private GridPane leftGrid;
-    @FXML private GridPane rightGrid;
     @FXML private Label scoreLeft;
     @FXML private Label scoreRight;
-    @FXML private Label lblWinner;
     @FXML private VBox frameCanvas;
     @FXML private Canvas gameCanvasLeft;
     @FXML private Canvas gameCanvasRight;
 
+    // -------- Game State --------
     private Board boardLeft;
     private Board boardRight;
     private Tetromino currentPieceLeft;
     private Tetromino currentPieceRight;
 
-    // --- game over / dialog flags (keep single definition) ---
-    private boolean gameOver = false;          // set true when match ends
-    private boolean nameDialogShowing = false; // prevent double dialogs
-    private boolean scoresSaved = false;       // prevent double writes
+    private int scoreLeftValue = 0;
+    private int scoreRightValue = 0;
 
-    private static final int hiddenRows = 4;
+    private boolean paused = false;
+    private boolean gameOver = false;
+    private boolean started = false;
+
+    private boolean nameDialogShowing = false;
+    private boolean scoresSaved = false;
+
+    private AnimationTimer timer;
+    private Frame parentFrame;
+
+    // -------- Layout / Timing --------
+    private static final int HIDDEN_ROWS = 4;
+    private static final int CELL = 25;
+    private static final double MARGIN = 8;
+    private boolean fitting = false;
 
     private long lastTickLeft = 0;
     private long lastTickRight = 0;
     private double dropIntervalMs = 600;
 
-    private boolean paused = false;
-
-    private AnimationTimer timer;
-    private Frame parentFrame;
-
-    // tickleft/right moves the players pieces down by one tick
-    private void tickLeft() {
-        if(aiLeft != null)
-        {
-            aiLeft.step();
-        }
-        tick(boardLeft, true);
-    }
-    private void tickRight() {
-        if(aiRight != null)
-        {
-            aiRight.step();
-        }
-        tick(boardRight, false);
-    }
-
-    private int scoreLeftValue = 0;
-    private int scoreRightValue = 0;
-
-    // Palette of colors for tetromino IDs
-    // Index 0 is empty (no block)
+    // -------- Palette --------
     private static final Color[] PALETTE = {
-            Color.TRANSPARENT, // 0 - empty cell
-            Color.CYAN,        // 1 - I
-            Color.BLUE,        // 2 - J
-            Color.ORANGE,      // 3 - L
-            Color.YELLOW,      // 4 - O
-            Color.GREEN,       // 5 - S
-            Color.PURPLE,      // 6 - T
-            Color.RED          // 7 - Z
+            Color.TRANSPARENT,
+            Color.CYAN, Color.BLUE, Color.ORANGE,
+            Color.YELLOW, Color.GREEN, Color.PURPLE, Color.RED
     };
 
+    // ===== Lifecycle =====
     @FXML
     private void initialize() {
-        // model setup
-        boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
-        boardRight = new Board(config.fieldWidth(), config.fieldHeight());
+        boardLeft  = new Board(config.fieldWidth(),  config.fieldHeight() + HIDDEN_ROWS);
+        boardRight = new Board(config.fieldWidth(),  config.fieldHeight() + HIDDEN_ROWS);
 
-        HBox.setHgrow(leftColumn, Priority.ALWAYS);
-        HBox.setHgrow(rightColumn, Priority.ALWAYS);
+        int visibleH = boardLeft.h - HIDDEN_ROWS;
+        gameCanvasLeft.setWidth (boardLeft.w  * CELL);
+        gameCanvasLeft.setHeight(visibleH     * CELL);
+        gameCanvasRight.setWidth (boardRight.w * CELL);
+        gameCanvasRight.setHeight(visibleH     * CELL);
 
-        int blockSize = 25;
-        gameCanvasLeft.setWidth(boardLeft.w * blockSize);
-        gameCanvasLeft.setHeight((boardLeft.h - hiddenRows) * blockSize);
+        VBox.setVgrow(leftColumn, Priority.ALWAYS);
+        VBox.setVgrow(rightColumn, Priority.ALWAYS);
 
-        gameCanvasRight.setWidth(boardRight.w * blockSize);
-        gameCanvasRight.setHeight((boardRight.h - hiddenRows) * blockSize);
-
-        Platform.runLater(() -> {
-            javafx.stage.Screen fxScreen = javafx.stage.Screen.getPrimary();
-            javafx.geometry.Rectangle2D bounds = fxScreen.getVisualBounds();
-
-            double screenW = bounds.getWidth() * 0.9;
-            double screenH = bounds.getHeight() * 0.9;
-
-            double actualW = frameCanvas.getLayoutBounds().getWidth();
-            double actualH = frameCanvas.getLayoutBounds().getHeight();
-
-            if (actualW == 0 || actualH == 0) {
-                System.out.println("Layout not ready yet — retry later");
-                return;
-            }
-
-            double scaleX = screenW / actualW;
-            double scaleY = screenH / actualH;
-            double scale = Math.min(1.0, Math.min(scaleX, scaleY));
-
-            frameCanvas.setScaleX(scale);
-            frameCanvas.setScaleY(scale);
-
-            System.out.println("✅ Frame area scaled: " + scale + " (W=" + actualW + ", H=" + actualH + ")");
-        });
-
-        //Set player type (LEFT side)
-        if(config.leftPlayer() == PlayerType.AI)
-        {
+        if (config.leftPlayer() == PlayerType.AI) {
             aiLeft = new AIBoardController(new GameBoardAdapter(boardLeft), gameCanvasLeft);
-
-        }else if(config.leftPlayer() == PlayerType.EXTERNAL)
-        {
+        } else if (config.leftPlayer() == PlayerType.EXTERNAL) {
             externalLeft = new ExternalPlayer(this, true);
-            //When external is selected, set externalPlayer class to connect with server
             externalLeft.connectToServer();
         }
-
-        //Set RIGHT side player type
-        if(config.rightPlayer() == PlayerType.AI)
-        {
-            // ★ fixed: right AI should use gameCanvasRight
+        if (config.rightPlayer() == PlayerType.AI) {
             aiRight = new AIBoardController(new GameBoardAdapter(boardRight), gameCanvasRight);
-        } else if(config.rightPlayer() == PlayerType.EXTERNAL)
-        {
-            externalRight = new ExternalPlayer(this,false);
+        } else if (config.rightPlayer() == PlayerType.EXTERNAL) {
+            externalRight = new ExternalPlayer(this, false);
             externalRight.connectToServer();
         }
 
-        // UI
         scoreLeft.setText("Score: 0");
         scoreRight.setText("Score: 0");
-        lblWinner.setText("");
 
-        // input focus
         Platform.runLater(() -> {
+            drawWaitingOverlay(gameCanvasLeft,  "Press any key to start");
+            drawWaitingOverlay(gameCanvasRight, "Press any key to start");
+
+            attachScaleToScene();
+            scheduleScaleFit();
+
             leftColumn.setFocusTraversable(true);
             leftColumn.requestFocus();
             leftColumn.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
         });
+    }
 
-        // start game
+    public void setParent(Frame frame) { this.parentFrame = frame; }
+
+    // ===== Start / Pause =====
+    private void startTwoPlayerGame() {
+        if (started) return;
+        started = true;
+
+        scoreLeftValue = 0;
+        scoreRightValue = 0;
+        scoreLeft.setText("Score: 0");
+        scoreRight.setText("Score: 0");
+        gameOver = false;
+
         initialSpawnBoth();
         renderBothBoards();
         setupTimer();
     }
 
-    public void setParent(Frame frame){
-        this.parentFrame = frame;
+    private void togglePause() {
+        if (gameOver) return;
+        if (paused) resumeGame(); else pauseGame();
+        paused = !paused;
+    }
+    public void pauseGame()  { if (timer != null) timer.stop(); }
+    public void resumeGame() { if (timer != null) timer.start(); }
+
+    // ===== Frame scaling (fit whole UI into window) =====
+    private void attachScaleToScene() {
+        if (frameCanvas == null) return;
+
+        frameCanvas.sceneProperty().addListener((o, oldSc, sc) -> {
+            if (sc == null) return;
+            sc.widthProperty().addListener((ox, a, b) -> scheduleScaleFit());
+            sc.heightProperty().addListener((ox, a, b) -> scheduleScaleFit());
+        });
+
+        frameCanvas.widthProperty().addListener((o, a, b) -> scheduleScaleFit());
+        frameCanvas.heightProperty().addListener((o, a, b) -> scheduleScaleFit());
+        leftColumn.widthProperty().addListener((o, a, b) -> scheduleScaleFit());
+        rightColumn.widthProperty().addListener((o, a, b) -> scheduleScaleFit());
     }
 
-    // set up and start the game timer to control intervals between piece drops
+    private void scheduleScaleFit() {
+        PauseTransition pt = new PauseTransition(Duration.millis(35));
+        pt.setOnFinished(e -> fitFrameToScene());
+        pt.play();
+    }
+
+    private void fitFrameToScene() {
+        if (fitting) return;
+        fitting = true;
+        try {
+            if (frameCanvas == null || frameCanvas.getScene() == null) return;
+
+            double contentW = frameCanvas.getLayoutBounds().getWidth();
+            double contentH = frameCanvas.getLayoutBounds().getHeight();
+            if (contentW <= 0 || contentH <= 0) return;
+
+            double sceneW = frameCanvas.getScene().getWidth();
+            double sceneH = frameCanvas.getScene().getHeight();
+            if (sceneW <= 0 || sceneH <= 0) return;
+
+            double availW = Math.max(1, sceneW - MARGIN);
+            double availH = Math.max(1, sceneH - MARGIN);
+
+            double sx = availW / contentW;
+            double sy = availH / contentH;
+            double scale = Math.min(1.0, Math.min(sx, sy)); // only downscale
+
+            if (Math.abs(scale - frameCanvas.getScaleX()) > 0.01) {
+                frameCanvas.setScaleX(scale);
+                frameCanvas.setScaleY(scale);
+            }
+        } finally {
+            Platform.runLater(() -> fitting = false);
+        }
+    }
+
+    // ===== Timer / Tick =====
     private void setupTimer() {
         timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (lastTickLeft == 0) lastTickLeft = now;
+                if (paused || gameOver) return;
+
+                if (lastTickLeft == 0)  lastTickLeft  = now;
                 if (lastTickRight == 0) lastTickRight = now;
 
-                long elapsedLeft = (now - lastTickLeft) / 1_000_000L;
-                long elapsedRight = (now - lastTickRight) / 1_000_000L;
+                if (externalLeft  != null) externalLeft.processServerInput();
+                if (externalRight != null) externalRight.processServerInput();
 
-                //Check external input
-                if(externalLeft != null)
-                {
-                    externalLeft.processServerInput();
-                }
-                if(externalRight != null)
-                {
-                    externalRight.processServerInput();
-                }
+                if (aiLeft  != null) aiLeft.step();
+                if (aiRight != null) aiRight.step();
 
-                // Check AI action
-                if(aiLeft != null)
-                {
-                    aiLeft.step();
-                }
-                if(aiRight != null)
-                {
-                    aiRight.step();
-                }
+                long eL = (now - lastTickLeft)  / 1_000_000L;
+                long eR = (now - lastTickRight) / 1_000_000L;
 
-                if (elapsedLeft >= dropIntervalMs) {
-                    if (aiLeft != null)
-                        aiLeft.step();
-                    tickLeft();
-                    lastTickLeft = now;
-                }
-                if (elapsedRight >= dropIntervalMs) {
-                    if (aiRight != null) aiRight.step();
-                    tickRight();
-                    lastTickRight = now;
-                }
+                if (eL >= dropIntervalMs)  { tick(boardLeft,  true);  lastTickLeft  = now; }
+                if (eR >= dropIntervalMs)  { tick(boardRight, false); lastTickRight = now; }
 
                 renderBothBoards();
             }
@@ -246,84 +241,38 @@ public class TwoPlayerController implements Screen {
         timer.start();
     }
 
-    /*
-    move the tetromino down the board
-    once the piece has landed, lock it in place and spawn the next piece
-    clear any full lines and update the score
-    if a new piece cannot be placed, end game
-     */
     private void tick(Board board, boolean isLeft) {
+        if ((isLeft && aiLeft != null) || (!isLeft && aiRight != null)) return;
+        if ((isLeft && externalLeft != null) || (!isLeft && externalRight != null)) return;
 
-        //WHEN Player --> AI
-        //LEFT SCREEN
-        if(isLeft && aiLeft != null)
-        {
-            //set one action & send to server
-            aiLeft.step();
-            return;
-        }
-        //RIGHT SCREEN
-        if(!isLeft && aiRight != null)
-        {
-            aiRight.step();
-            return;
-        }
-
-        //WHEN Player --> EXTERNAL
-        if(isLeft && externalLeft != null)
-        {
-            //receive action from server and make action
-            externalLeft.processServerInput();
-            return;
-        }
-        if(!isLeft && externalRight != null)
-        {
-            externalRight.processServerInput();
-            return;
-        }
-
-        //BELOW --> When player is USER
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
 
-        Tetromino down = piece.moved(1,0);
+        Tetromino down = piece.moved(1, 0);
         boolean landed = !board.canPlace(down);
 
-        if (!landed){
-            // moves the piece downwards
+        if (!landed) {
             piece = down;
         } else {
-            // if the piece has landed, lock it and clear any full lines
             board.lock(piece);
-            int linesCleared = board.clearFullLines();
-
-            if (linesCleared > 0){
-                int points = pointsFor(linesCleared);
-
-                if (isLeft) scoreLeftValue += points;
-                else scoreRightValue += points;
-
+            int lines = board.clearFullLines();
+            if (lines > 0) {
+                int pts = pointsFor(lines);
+                if (isLeft) scoreLeftValue += pts; else scoreRightValue += pts;
                 updateScoreLabels();
             }
-
-            // spaw a new piece after locking the previous one
             piece = spawnFor(board);
             if (!board.canPlace(piece)) {
-                // if a new piece cannot be placed, game over and the winner is announced
-                endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
+                endAndPromptNames(); // <- end flow
                 return;
             }
         }
 
-        if (isLeft) currentPieceLeft = piece;
-        else currentPieceRight = piece;
-
-        renderBothBoards();
+        if (isLeft) currentPieceLeft = piece; else currentPieceRight = piece;
     }
 
-    //calculate the number of points awarded per lines cleared
     private int pointsFor(int linesCleared) {
-        return switch (linesCleared){
+        return switch (linesCleared) {
             case 1 -> 100;
             case 2 -> 300;
             case 3 -> 600;
@@ -332,321 +281,117 @@ public class TwoPlayerController implements Screen {
         };
     }
 
-    // update text labels to reflect current score
-    private void updateScoreLabels(){
+    private void updateScoreLabels() {
         scoreLeft.setText("Score: " + scoreLeftValue);
         scoreRight.setText("Score: " + scoreRightValue);
     }
 
-    // spawn the initial tetromino piece for both l/r players
-    private void initialSpawnBoth(){
-        currentPieceLeft = spawnFor(boardLeft);
+    // ===== Spawning =====
+    private void initialSpawnBoth() {
+        currentPieceLeft  = spawnFor(boardLeft);
         currentPieceRight = spawnFor(boardRight);
     }
 
-    // create a new random tetromino
-    // positioned at the centre of the board
-    private Tetromino spawnFor(Board board){
+    private Tetromino spawnFor(Board board) {
         Tetromino t = Tetromino.random(board.w);
         t.row = 0;
-        t.col = board.w/2-1;
+        t.col = board.w / 2 - 1;
         return t;
     }
 
-    /*
-    handle player input -> WASD for player 1 & Arrows for player 2
-    move Left (A/Left key)
-    move Right (D/Right key)
-    Rotate piece (W/Up key)
-    soft drop (S/Down key)
-     */
+    // ===== Input =====
     private void handleKeyPress(KeyEvent ev) {
+        if (!started) startTwoPlayerGame();
+
         switch (ev.getCode()) {
-            //player 1 controls (WASD)
-            /**
-             * In here, sending user action to server will be implemented
-             * for the case (Human vs External) or (External vs Human)
-             */
-            case A -> {
-                movePiece(boardLeft, true, 0, -1);
-                //if server is connected, send action to server
-                if(externalLeft != null && externalLeft.isConnected())
-                {
-                    //Send left command to server
-                    externalLeft.sendAction("LEFT");
-                }
-            }
-            case D -> {
-                movePiece(boardLeft, true, 0, 1);
-                //if server is connected, send action to server
-                if(externalLeft != null && externalLeft.isConnected())
-                {
-                    //Send right command to server
-                    externalLeft.sendAction("RIGHT");
-                }
-            }
-            case W -> {
-                rotatePiece(boardLeft, true);
-                //if server is connected, send action to server
-                if(externalLeft != null && externalLeft.isConnected())
-                {
-                    //Send rotate command to server
-                    externalLeft.sendAction("ROTATE");
-                }
-            }
-            case S -> {
-                softDrop(boardLeft, true);
-                //if server is connected, send action to server
-                if(externalLeft != null && externalLeft.isConnected())
-                {
-                    //Send down command to server
-                    externalLeft.sendAction("DOWN");
-                }
-            }
-
-            //player 2 controls (Arrows)
-            case LEFT -> {
-                movePiece(boardRight, false, 0, -1);
-                //if server is connected, send action to server
-                if(externalRight != null && externalRight.isConnected())
-                {
-                    //Send left command to server
-                    externalRight.sendAction("LEFT");
-                }
-            }
-            case RIGHT -> {
-                movePiece(boardRight, false, 0, 1);
-                //if server is connected, send action to server
-                if(externalRight != null && externalRight.isConnected())
-                {
-                    //Send right command to server
-                    externalRight.sendAction("RIGHT");
-                }
-            }
-
-            case UP -> {
-                rotatePiece(boardRight, false);
-                //if server is connected, send action to server
-                if(externalRight != null && externalRight.isConnected())
-                {
-                    //Send rotate command to server
-                    externalRight.sendAction("ROTATE");
-                }
-            }
-            case DOWN ->{
-                softDrop(boardRight, false);
-                //if server is connected, send action to server
-                if(externalRight != null && externalRight.isConnected())
-                {
-                    //Send down command to server
-                    externalRight.sendAction("DOWN");
-                }
-            }
-
-            // 'p' for pause
             case P -> togglePause();
+
+            // P1 (WASD)
+            case A -> { movePiece(boardLeft, true, 0, -1); if (externalLeft  != null && externalLeft.isConnected())  externalLeft.sendAction("LEFT"); }
+            case D -> { movePiece(boardLeft, true, 0, 1);  if (externalLeft  != null && externalLeft.isConnected())  externalLeft.sendAction("RIGHT"); }
+            case W -> { rotatePiece(boardLeft, true);      if (externalLeft  != null && externalLeft.isConnected())  externalLeft.sendAction("ROTATE"); }
+            case S -> { softDrop(boardLeft, true);         if (externalLeft  != null && externalLeft.isConnected())  externalLeft.sendAction("DOWN"); }
+
+            // P2 (Arrows)
+            case LEFT  -> { movePiece(boardRight, false, 0, -1); if (externalRight != null && externalRight.isConnected()) externalRight.sendAction("LEFT"); }
+            case RIGHT -> { movePiece(boardRight, false, 0, 1);  if (externalRight != null && externalRight.isConnected()) externalRight.sendAction("RIGHT"); }
+            case UP    -> { rotatePiece(boardRight, false);      if (externalRight != null && externalRight.isConnected()) externalRight.sendAction("ROTATE"); }
+            case DOWN  -> { softDrop(boardRight, false);         if (externalRight != null && externalRight.isConnected()) externalRight.sendAction("DOWN"); }
 
             default -> {}
         }
     }
 
-    /**
-     * Create public wrapper method to handle sent action from external player class.
-     * @param cmd
-     * @param isLeft
-     */
-    public void processCommand(String cmd, boolean isLeft)
-    {
-        switch(cmd.toUpperCase())
-        {
-            //using same method with handle key press method
-            case "LEFT" -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, -1);
-            case "RIGHT" -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, 1);
+    public void processCommand(String cmd, boolean isLeft) {
+        switch (cmd.toUpperCase()) {
+            case "LEFT"   -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, -1);
+            case "RIGHT"  -> movePiece(isLeft ? boardLeft : boardRight, isLeft, 0, 1);
             case "ROTATE" -> rotatePiece(isLeft ? boardLeft : boardRight, isLeft);
-            case "DOWN" -> softDrop(isLeft ? boardLeft : boardRight, isLeft);
-            //set the error handling line for the case when controller received
-            //exception command
-            default -> System.out.println("Unknown command sent: " + cmd);
+            case "DOWN"   -> softDrop(isLeft ? boardLeft : boardRight, isLeft);
+            default -> System.out.println("Unknown command: " + cmd);
         }
     }
 
-    // attempt to move the current tetromino by the given row (dRow) and column (dCol)
-
-    /**
-     * I set this private class to public class to use for applying action from server
-     * @param board
-     * @param isLeft
-     * @param dRow
-     * @param dCol
-     */
-    public void movePiece(Board board, boolean isLeft, int dRow, int dCol){
+    public void movePiece(Board board, boolean isLeft, int dRow, int dCol) {
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
-        Tetromino moved = piece.moved(dRow,dCol);
-        if (board.canPlace(moved)){
-            // update position if the move is valid
-            if (isLeft) currentPieceLeft = moved;
-            else currentPieceRight = moved;
+        Tetromino moved = piece.moved(dRow, dCol);
+        if (board.canPlace(moved)) {
+            if (isLeft) currentPieceLeft = moved; else currentPieceRight = moved;
             renderBothBoards();
         }
     }
 
-    // pause game
-    public void pauseGame() {
-        if (timer != null) timer.stop();
-    }
-
-    // resume game, works alongside pause
-    public void resumeGame() {
-        if (timer != null) timer.start();
-    }
-
-    // soft drop the current piece
-    // increases the falling speed, locks the piece into place
-    private void softDrop(Board board, boolean isLeft){
+    private void softDrop(Board board, boolean isLeft) {
         Tetromino p = isLeft ? currentPieceLeft : currentPieceRight;
-
         if (p == null) return;
-        Tetromino down = p.moved(1,0);
 
+        Tetromino down = p.moved(1, 0);
         if (board.canPlace(down)) {
-            // If it can move (not locked into place) update its position
             p = down;
         } else {
-            // if the piece cant move down any further, lock it into place and check to clear lines
             board.lock(p);
-            int linesCleared = board.clearFullLines();
-
-            if (linesCleared > 0){
-                int points = pointsFor(linesCleared);
-                if (isLeft) scoreLeftValue += points;
-                else scoreRightValue += points;
+            int lines = board.clearFullLines();
+            if (lines > 0) {
+                int pts = pointsFor(lines);
+                if (isLeft) scoreLeftValue += pts; else scoreRightValue += pts;
                 updateScoreLabels();
             }
-
-            // spawn a new piece after locking the previous one
-            // otherwise call end game and announce the winner
             p = spawnFor(board);
             if (!board.canPlace(p)) {
-                endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
+                endAndPromptNames(); // <- end flow
+                return;
             }
         }
-
-        if (isLeft) currentPieceLeft = p;
-        else currentPieceRight = p;
+        if (isLeft) currentPieceLeft = p; else currentPieceRight = p;
         renderBothBoards();
     }
 
-    //rotate the current piece clockwise
     private void rotatePiece(Board board, boolean isLeft) {
         Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
         if (piece == null) return;
 
-        Tetromino rotate = piece.rotated(1); // rotate 90 degrees clockwise
+        Tetromino rotate = piece.rotated(1);
         for (int kick : new int[]{0, -1, 1}) {
             Tetromino t = new Tetromino(rotate.type, rotate.rotation, rotate.row, rotate.col + kick);
             if (board.canPlace(t)) {
-                // if this rotated position fits, use it
-                if (isLeft) currentPieceLeft = t;
-                else currentPieceRight = t;
+                if (isLeft) currentPieceLeft = t; else currentPieceRight = t;
                 break;
             }
         }
-        // redraw boards after rotation
         renderBothBoards();
     }
 
-    public void focusGame(){
-        Platform.runLater(() -> {
-            if (leftColumn != null) {
-                leftColumn.setFocusTraversable(true);
-                leftColumn.requestFocus();
-            }
-        });
-    }
-
-    private void togglePause(){
-        if (gameOver) return;
-        if (paused) {resumeGame();}
-        else  {pauseGame();}
-
-        paused = !paused;
-    }
-
-    // stop the timer and declare game over/the winner
-    private void endGame(String msg) {
-        if (timer != null) timer.stop();
-        lblWinner.setText(msg);
-
-        if (scoresSaved || nameDialogShowing) return;
-        nameDialogShowing = true;
-
-        final int finalLeftScore  = scoreLeftValue;
-        final int finalRightScore = scoreRightValue;
-        final String defaultLeft  = "Left Player";
-        final String defaultRight = "Right Player";
-
-        Platform.runLater(() -> {
-            // wrapper so the inner lambda can read it (must be effectively final)
-            final String[] leftNameBox = new String[1];
-
-            TextInputDialog d1 = new TextInputDialog(defaultLeft);
-            d1.setTitle("High Score");
-            d1.setHeaderText("Left player name?");
-            d1.setContentText("Name:");
-            d1.setOnHidden(e1 -> {
-                String leftName = d1.getResult();
-                if (leftName == null || leftName.trim().isEmpty()) leftName = defaultLeft;
-                leftNameBox[0] = leftName;
-
-                TextInputDialog d2 = new TextInputDialog(defaultRight);
-                d2.setTitle("High Score");
-                d2.setHeaderText("Right player name?");
-                d2.setContentText("Name:");
-                d2.setOnHidden(e2 -> {
-                    String rightName = d2.getResult();
-                    if (rightName == null || rightName.trim().isEmpty()) rightName = defaultRight;
-
-                    // snapshot config ONCE per match
-                    ConfigService.load();
-                    TetrisConfig cfg = ConfigService.get();
-                    String tag = ConfigTagUtil.makeTagFrom(cfg);
-
-                    HighScoreWriter.append(leftNameBox[0], finalLeftScore, tag);
-                    HighScoreWriter.append(rightName,      finalRightScore, tag);
-
-                    scoresSaved = true;
-                    nameDialogShowing = false;
-
-                    // jump to High Score screen (same動線 as 1P)
-                    if (parentFrame != null) {
-                        parentFrame.showScreen(new HighScoreScreen((Main) parentFrame));
-                    }
-                });
-                d2.show();
-            });
-            d1.show();
-        });
-    }
-
-    // --- small helper to draw "GAME OVER" on both canvases (visual feedback before dialogs) ---
-    private void overlayGameOver() {
-        drawOverlayOnCanvas(gameCanvasLeft,  "GAME OVER");
-        drawOverlayOnCanvas(gameCanvasRight, "GAME OVER");
-    }
-    private void drawOverlayOnCanvas(Canvas canvas, String text) {
-        if (canvas == null) return;
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        gc.setFill(Color.rgb(0,0,0,0.7));
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(Color.WHITE);
-        gc.setFont(javafx.scene.text.Font.font(32));
-        gc.fillText(text, canvas.getWidth()/2 - 90, canvas.getHeight()/2);
-    }
-
+    // ===== Rendering =====
     private void renderBothBoards() {
-        renderBoardInto(gameCanvasLeft, boardLeft, currentPieceLeft);
+        renderBoardInto(gameCanvasLeft,  boardLeft,  currentPieceLeft);
         renderBoardInto(gameCanvasRight, boardRight, currentPieceRight);
+
+        // Force overlay after any render if game is over (so it never “disappears”).
+        if (gameOver) {
+            drawGameOverOverlay(gameCanvasLeft);
+            drawGameOverOverlay(gameCanvasRight);
+        }
     }
 
     private void renderBoardInto(Canvas target, Board board, Tetromino piece) {
@@ -654,54 +399,147 @@ public class TwoPlayerController implements Screen {
         gc.clearRect(0, 0, target.getWidth(), target.getHeight());
 
         int[][] grid = board.snapshot();
-        int blockSize = 25;
 
-        // Draw locked cells
-        for (int r = hiddenRows; r < board.h; r++) {
+        for (int r = HIDDEN_ROWS; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
                 int id = grid[r][c];
                 Color fill = (id == 0) ? Color.BLACK
                         : (id >= 0 && id < PALETTE.length ? PALETTE[id] : Color.BLACK);
 
                 gc.setFill(fill);
-                gc.fillRect(c * blockSize, (r - hiddenRows) * blockSize, blockSize, blockSize);
+                gc.fillRect(c * CELL, (r - HIDDEN_ROWS) * CELL, CELL, CELL);
 
                 gc.setStroke(Color.web("#222"));
-                gc.strokeRect(c * blockSize, (r - hiddenRows) * blockSize, blockSize, blockSize);
+                gc.strokeRect(c * CELL, (r - HIDDEN_ROWS) * CELL, CELL, CELL);
             }
         }
-        //draw the current falling piece
+
         if (piece != null) {
             Color colour = PALETTE[piece.type.colorId];
             for (int[] cell : piece.cells()) {
                 int row = piece.row + cell[1];
                 int col = piece.col + cell[0];
+                if (row < HIDDEN_ROWS || row >= board.h || col < 0 || col >= board.w) continue;
 
-                if (row < hiddenRows || row >= board.h || col < 0 || col >= board.w) continue;
-
-                // only the hidden part of the piece that is within visible bounds
                 gc.setFill(colour);
-                gc.fillRect(col * blockSize, (row - hiddenRows) * blockSize, blockSize, blockSize);
+                gc.fillRect(col * CELL, (row - HIDDEN_ROWS) * CELL, CELL, CELL);
 
                 gc.setStroke(Color.web("#222"));
-                gc.strokeRect(col * blockSize, (row - hiddenRows) * blockSize, blockSize, blockSize);
+                gc.strokeRect(col * CELL, (row - HIDDEN_ROWS) * CELL, CELL, CELL);
             }
         }
     }
 
+    private void drawWaitingOverlay(Canvas canvas, String text) {
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.setFill(Color.BLACK);
+        g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+        g.setStroke(Color.web("#222"));
+        for (double x = 0; x <= canvas.getWidth(); x += CELL) g.strokeLine(x, 0, x, canvas.getHeight());
+        for (double y = 0; y <= canvas.getHeight(); y += CELL) g.strokeLine(0, y, canvas.getWidth(), y);
+
+        g.setFill(Color.WHITE);
+        g.setFont(Font.font(16));
+        Text t = new Text(text);
+        t.setFont(g.getFont());
+        double tw = t.getLayoutBounds().getWidth();
+        double th = t.getLayoutBounds().getHeight();
+        double tx = Math.max(8, (canvas.getWidth() - tw) / 2.0);
+        double ty = Math.max(th + 8, canvas.getHeight() * 0.5);
+        g.fillText(text, tx, ty);
+    }
+
+    private void drawGameOverOverlay(Canvas canvas) {
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.setFill(Color.rgb(0, 0, 0, 0.7));
+        g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        g.setFill(Color.WHITE);
+        g.setFont(Font.font(28));
+        String text = "GAME OVER";
+        Text m = new Text(text);
+        m.setFont(g.getFont());
+        double tw = m.getLayoutBounds().getWidth();
+        g.fillText(text, Math.max(8, (canvas.getWidth() - tw) / 2.0), canvas.getHeight() / 2.0);
+    }
+
+    // ===== End flow: prompt names, save scores, go to High Score =====
+    private void endAndPromptNames() {
+        if (gameOver) return;
+        gameOver = true;
+        if (timer != null) timer.stop();
+
+        // draw overlay immediately
+        drawGameOverOverlay(gameCanvasLeft);
+        drawGameOverOverlay(gameCanvasRight);
+
+        if (scoresSaved || nameDialogShowing) return;
+        nameDialogShowing = true;
+
+        final int finalLeft  = scoreLeftValue;
+        final int finalRight = scoreRightValue;
+
+        Platform.runLater(() -> {
+            final String defaultLeft  = "Left Player";
+            final String defaultRight = "Right Player";
+
+            TextInputDialog d1 = new TextInputDialog(defaultLeft);
+            d1.setTitle("High Score");
+            d1.setHeaderText("Left player name?");
+            d1.setContentText("Name:");
+            d1.setOnHidden(e1 -> {
+                String res1 = d1.getResult();
+                final String leftNameFinal =
+                        (res1 == null || res1.trim().isEmpty()) ? defaultLeft : res1.trim();
+
+                TextInputDialog d2 = new TextInputDialog(defaultRight);
+                d2.setTitle("High Score");
+                d2.setHeaderText("Right player name?");
+                d2.setContentText("Name:");
+                d2.setOnHidden(e2 -> {
+                    String res2 = d2.getResult();
+                    final String rightNameFinal =
+                            (res2 == null || res2.trim().isEmpty()) ? defaultRight : res2.trim();
+
+                    saveTwoScores(leftNameFinal, finalLeft, rightNameFinal, finalRight);
+                    nameDialogShowing = false;
+                });
+                d2.show();
+            });
+            d1.show();
+        });
+    }
+
+    private void saveTwoScores(String leftName, int leftScore, String rightName, int rightScore) {
+        try {
+            ConfigService.load();
+            TetrisConfig cfg = ConfigService.get();
+            String tag = ConfigTagUtil.makeTagFrom(cfg);
+
+            HighScoreWriter.append(leftName,  leftScore,  tag);
+            HighScoreWriter.append(rightName, rightScore, tag);
+            scoresSaved = true;
+
+            // Navigate to High Score screen (same as single player)
+            Platform.runLater(() -> {
+                if (parentFrame instanceof Main m) {
+                    parentFrame.showScreen(new HighScoreScreen(m));
+                } else if (parentFrame != null) {
+                    // Fallback cast (used in your single-player code)
+                    parentFrame.showScreen(new HighScoreScreen((Main) parentFrame));
+                }
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    // ===== Screen =====
     @Override
     public Parent getScreen() {
         return leftColumn != null ? leftColumn.getScene().getRoot() : null;
     }
 
     @Override
-    public void setRoute(String path, Screen screen) {}
-
-    // --- utility ---
-    private void goToHighScoreScreen() {
-        if (parentFrame != null) {
-            HighScoreScreen screen = new HighScoreScreen((Main) parentFrame);
-            parentFrame.showScreen(screen);
-        }
-    }
+    public void setRoute(String path, Screen screen) { /* no-op */ }
 }
