@@ -1,20 +1,11 @@
 {
-<<<<<<< Updated upstream
-  "fieldWidth": 10,
+  "fieldWidth": 9,
   "leftPlayer": "HUMAN",
   "music": true,
   "sfx": true,
-  "fieldHeight": 25,
+  "fieldHeight": 16,
   "gameLevel": 6,
-=======
-  "fieldWidth": 6,
-  "leftPlayer": "HUMAN",
-  "music": false,
-  "sfx": false,
-  "fieldHeight": 15,
-  "gameLevel": 1,
->>>>>>> Stashed changes
-  "extendMode": true,
-  "rightPlayer": "AI",
-  "aiPlay": true
+  "extendMode": false,
+  "rightPlayer": "HUMAN",
+  "aiPlay": false
 }

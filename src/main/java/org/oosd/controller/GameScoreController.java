@@ -24,11 +24,11 @@ public class GameScoreController {
 
     @FXML
     public void initialize() {
-        // Ensure writable file and load Top10 (padded with placeholders)
+        // IMPORTANT: Load from a writable file on disk (not from classpath resource)
         HighScoreWriter.ensureFile();
         ScoreStore.loadFromJsonFile(HighScoreWriter.SCORE_PATH);
 
-        // Name
+        // Name column
         nameColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getName()));
         nameColumn.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
@@ -38,7 +38,7 @@ public class GameScoreController {
             }
         });
 
-        // Score
+        // Score column
         scoreColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getScore()));
         scoreColumn.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(Number item, boolean empty) {
@@ -48,7 +48,7 @@ public class GameScoreController {
             }
         });
 
-        // Config (use the config snapshot saved per entry)
+        // Config column -> use the saved snapshot from JSON (do not recompute)
         configColumn.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getConfig()));
         configColumn.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
@@ -58,7 +58,7 @@ public class GameScoreController {
             }
         });
 
-        // Rank
+        // Rank column (1-based)
         rankColumn.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(Number item, boolean empty) {
                 super.updateItem(item, empty);
@@ -68,10 +68,10 @@ public class GameScoreController {
             }
         });
 
-        // Bind data
+        // Bind items
         scoreTable.setItems(ScoreStore.getScores());
 
-        // Clear button -> truncate file to []
+        // Clear -> truncate the JSON file to "[]" and reload the table
         clearButton.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Clear Confirmation");
@@ -83,7 +83,7 @@ public class GameScoreController {
 
             alert.showAndWait().ifPresent(bt -> {
                 if (bt == yes) {
-                    HighScoreWriter.clearFile(); // write "[]"
+                    HighScoreWriter.clearFile();              // write "[]"
                     ScoreStore.loadFromJsonFile(HighScoreWriter.SCORE_PATH); // reload
                     scoreTable.setItems(ScoreStore.getScores());
                     scoreTable.refresh();
@@ -91,14 +91,14 @@ public class GameScoreController {
             });
         });
 
-        // Back button
+        // Back navigation
         if (backButton != null) {
             backButton.setOnAction(e -> {
                 if (main != null) main.showScreen(main.getMainScreen());
             });
         }
 
-        // Fix table height (10 rows)
+        // Fix table height to exactly 10 rows (Top 10)
         scoreTable.setFixedCellSize(28);
         scoreTable.prefHeightProperty().bind(
                 scoreTable.fixedCellSizeProperty().multiply(10 + 1.01)
