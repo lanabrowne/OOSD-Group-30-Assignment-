@@ -100,4 +100,23 @@ public class GameBoardAdapter {
     public Board getBoard() {
         return board;
     }
+
+public void updateBoardAsync() {
+    new Thread(() -> {
+        System.out.println("Background thread running: " + Thread.currentThread().getName());
+
+
+        try {
+            Thread.sleep(500); // simulate delay
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+  
+        javafx.application.Platform.runLater(() -> {
+            System.out.println("UI safely updated from: " + Thread.currentThread().getName());
+        });
+    }).start();
+}
+
 }
