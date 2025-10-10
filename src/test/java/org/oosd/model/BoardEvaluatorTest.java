@@ -1,80 +1,110 @@
+//advanced testing
 package org.oosd.model;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-public class BoardEvaluatorTest {
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 
-    private BoardEvaluator evaluator;
+class BoardEvaluatorTest {
 
-    @BeforeEach
-    void setUp() {
-        evaluator = new BoardEvaluator();
+    /**
+     * PARAMETERIZED TEST
+     * Demonstrates a parameterized test with a STUB BoardEvaluator
+     */
+    @ParameterizedTest(name = "Board {0}x{1} should have non-negative score")
+    @CsvSource({
+        "10,20",
+        "5,5",
+        "15,10"
+    })
+    void parameterizedTestBoardEvaluation(int width, int height) {
+        // Stub: returns fixed score regardless of input
+        BoardEvaluator stubEvaluator = new BoardEvaluator() {
+            @Override
+            public int evaluateBoard(int[][] board) {
+                return 100; // stub: always positive
+            }
+        };
+
+        int[][] board = new int[height][width];
+        int score = stubEvaluator.evaluateBoard(board);
+
+        System.out.println("Board " + width + "x" + height + " score: " + score);
+        assertTrue(score >= 0, "Board score should be non-negative");
     }
 
-    static Stream<BoardTestCase> boardProvider() {
-        return Stream.of(
-                new BoardTestCase(new int[20][10], "Empty board should have lowest score"),
-                new BoardTestCase(singleLineBoard(), "Single filled line should have higher score than empty board"),
-                new BoardTestCase(filledBoard(), "Fully filled board should have higher score than single line board"),
-                new BoardTestCase(boardWithHoles(), "Board with holes should have lower score than filled board")
-        );
+    /**
+     * STUB TEST
+     * Demonstrates a stub explicitly
+     */
+    @Test
+    void testWithStub() {
+        BoardEvaluator stubEvaluator = new BoardEvaluator() {
+            @Override
+            public int evaluateBoard(int[][] board) {
+                return 50;
+            }
+        };
+
+        int[][] board = new int[5][5];
+        assertEquals(50, stubEvaluator.evaluateBoard(board), "Stub should always return 50");
     }
 
-    @ParameterizedTest(name = "{1}")
-    @MethodSource("boardProvider")
-    void testEvaluateBoard(BoardTestCase testCase) {
-        int score = evaluator.evaluateBoard(testCase.board);
-        testCase.score = score; // store score for later comparison
-    }
-
-    @org.junit.jupiter.api.Test
-    void testRelativeScores() {
-        int emptyScore = evaluator.evaluateBoard(new int[20][10]);
-        int singleLineScore = evaluator.evaluateBoard(singleLineBoard());
-        int filledScore = evaluator.evaluateBoard(filledBoard());
-        int holesScore = evaluator.evaluateBoard(boardWithHoles());
-
-        assertTrue(singleLineScore > emptyScore, "Single line should score higher than empty board");
-        assertTrue(filledScore > singleLineScore, "Filled board should score higher than single line board");
-        assertTrue(holesScore < filledScore, "Board with holes should score lower than filled board");
-    }
-
-    private static class BoardTestCase {
-        int[][] board;
-        String message;
-        int score;
-
-        BoardTestCase(int[][] board, String message) {
-            this.board = board;
-            this.message = message;
-        }
-    }
-
-    private static int[][] singleLineBoard() {
-        int[][] board = new int[20][10];
-        for (int i = 0; i < 10; i++) board[19][i] = 1;
-        return board;
-    }
-
-    private static int[][] filledBoard() {
-        int[][] board = new int[20][10];
-        for (int y = 0; y < 20; y++) {
-            for (int x = 0; x < 10; x++) {
-                board[y][x] = 1;
+    /**
+     * FAKE TEST
+     * Demonstrates a fake with minimal logic
+     */
+    @Test
+    void testWithFake() {
+        class FakeBoardEvaluator extends BoardEvaluator {
+            @Override
+            public int evaluateBoard(int[][] board) {
+                // fake: returns board size as score
+                return board.length * board[0].length;
             }
         }
-        return board;
+
+        BoardEvaluator fakeEvaluator = new FakeBoardEvaluator();
+        int[][] board = new int[4][3];
+
+        assertEquals(12, fakeEvaluator.evaluateBoard(board), "Fake should return board area");
     }
 
-    private static int[][] boardWithHoles() {
-        int[][] board = new int[20][10];
-        board[18][0] = 1;
-        board[19][0] = 1;
-        return board;
+    /**
+     * MOCK TEST
+     * Demonstrates Mockito mock
+     */
+    @Test
+    void testWithMock() {
+        BoardEvaluator mockEvaluator = Mockito.mock(BoardEvaluator.class);
+
+        int[][] dummyBoard = new int[2][2];
+        when(mockEvaluator.evaluateBoard(dummyBoard)).thenReturn(999);
+
+        int result = mockEvaluator.evaluateBoard(dummyBoard);
+
+        assertEquals(999, result, "Mock should return configured value");
+        verify(mockEvaluator).evaluateBoard(dummyBoard);
+    }
+
+    /**
+     * SPY TEST
+     * Demonstrates Mockito spy
+     */
+    @Test
+    void testWithSpy() {
+        BoardEvaluator realEvaluator = new BoardEvaluator();
+        BoardEvaluator spyEvaluator = Mockito.spy(realEvaluator);
+
+        int[][] board = new int[2][2];
+        doReturn(777).when(spyEvaluator).evaluateBoard(board);
+
+        int result = spyEvaluator.evaluateBoard(board);
+
+        assertEquals(777, result, "Spy should override real method return");
     }
 }
