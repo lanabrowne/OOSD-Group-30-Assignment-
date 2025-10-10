@@ -3,22 +3,20 @@ package org.oosd.ui;
 import javafx.animation.AnimationTimer;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 
 import org.oosd.Main;
-import org.oosd.controller.AIBoardController;
-import org.oosd.external.ExternalPlayer;
+import org.oosd.controller.TwoPlayerAIController;
 import org.oosd.model.Board;
 import org.oosd.model.GameBoardAdapter;
 
 public class TwoPlayerAIScreen implements ScreenWithGame {
 
     private final HBox root;
-    private final AIBoardController ai1;
-    private final AIBoardController ai2;
+    private final TwoPlayerAIController ai1;
+    private final TwoPlayerAIController ai2;
 
     private Screen parentScreen;
     private Main mainApp;
@@ -36,8 +34,8 @@ public class TwoPlayerAIScreen implements ScreenWithGame {
         GameBoardAdapter adapter1 = new GameBoardAdapter(board1);
         GameBoardAdapter adapter2 = new GameBoardAdapter(board2);
 
-        ai1 = new AIBoardController(adapter1, c1);
-        ai2 = new AIBoardController(adapter2, c2);
+        ai1 = new TwoPlayerAIController(adapter1, c1);
+        ai2 = new TwoPlayerAIController(adapter2, c2);
 
         Line separator = new Line(0, 0, 0, 600);
         separator.setStroke(Color.WHITE);

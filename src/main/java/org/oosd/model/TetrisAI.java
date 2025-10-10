@@ -110,7 +110,7 @@ public class TetrisAI {
     // sighted decisions like creating holes that block the next piece
 
     // prevents AI from making short-sighted decisions
-    private int evaluateWithNext(int[][] board, int boardHeight, int boardWidth, Tetromino next) {
+    public int evaluateWithNext(int[][] board, int boardHeight, int boardWidth, Tetromino next) {
         int bestScore = Integer.MIN_VALUE;
 
         int maxRotations = next.type.maxRotation();

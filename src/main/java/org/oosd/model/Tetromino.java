@@ -141,6 +141,10 @@ public class Tetromino extends AbstractPiece{
         return min;
     }
 
+    public Tetromino withCol(int newCol) {
+        return new Tetromino(this.type, this.row, newCol, this.rotation);
+    }
+
     // Get the bottommost row of the piece (relative to its own origin)
     public int getMaxRow() {
         int max = Integer.MIN_VALUE;

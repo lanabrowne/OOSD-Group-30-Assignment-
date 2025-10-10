@@ -9,15 +9,15 @@ public class ExternalClientTest {
             System.out.println("Connected to server!");
 
 
-            client.sendCommand("LEFT");
-            System.out.println("Sent command: LEFT");
+            //client.sendCommand("LEFT");
+           // System.out.println("Sent command: LEFT");
 
 
-            String response = client.readResponse();
-            System.out.println("Server says: " + response);
+            //String response = client.readResponse();
+            //System.out.println("Server says: " + response);
 
 
-            client.disconnect();
+            //client.disconnect();
         } else {
             System.out.println("Could not connect to server.");
         }

@@ -1,141 +1,80 @@
 package org.oosd.external;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.*;
 import java.net.Socket;
 
 /**
- * This class is for socket communication class with Server (Tetris Server jar file)
- * This class is like at front window of network communication (Send-receive operation with server)
+ * Handles socket communication with the TetrisServer.
+ * Responsible for sending PureGame JSON and receiving OpMove JSON.
  */
 public class ExternalClient {
-    //Set socket
-    private Socket socket;
-    private PrintWriter writeOut;
-    //Use Buffer to read file
-    private BufferedReader readIn;
-    //Set connected to false as default
     private ExternalPlayer player;
     private boolean connected = false;
 
-    public void setPlayer(ExternalPlayer player)
-    {
-        //Initialize External Player
+    public void setPlayer(ExternalPlayer player) {
         this.player = player;
     }
 
-
     /**
-     * By using host name and port number, connect to server
-     * @parameter--> Host name to connect with
-     * @param  --> Port number to connect to server
-     * @return
+     * One-time request: send the current game state and get optimal move.
+     * Each call opens and closes the socket.
      */
-    public boolean connect()
-    {
-        try{
-            socket = new Socket("localhost", 3000);
-            writeOut = new PrintWriter(socket.getOutputStream(), true);
-            readIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    public OpMove requestMove(String jsonGame) {
+        ObjectMapper mapper = new ObjectMapper();
+        try (
+                Socket socket = new Socket("localhost", 3000);
+                PrintWriter out = new PrintWriter(
+                        new OutputStreamWriter(socket.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8),
+                        true // autoFlush on println
+                );
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)
+                )
+        ) {
+            // 1) JSONを1行で送る（必ず println）
+            out.println(jsonGame);
+            out.flush();
 
-            //Start receiving thread
-            //Call thread command and create anonymouse thread and run the thread
-            //And use the lamda to implement Runable interface
-            Thread listener = new Thread(() -> {
-                try{
-                    String line;
-                    //Read string massages line one by one
-                    while((line = readIn.readLine()) != null)
-                    {
-                        //Store the collected method in the handle method
-                        //ex) If LEFT, RIGHT msg received, send to controller
-                        //or operation class and operate into UI
-                        handle(line);
-                    }
-                }catch(IOException e)
-                {
-                    System.out.println("Connection lost: " + e.getMessage());
-                }
-            });
+            // 2) 1行の応答を受け取る
+            String response = in.readLine();
+            if (response == null) {
+                System.err.println("⚠️ Server returned null response. Using default move.");
+                return new OpMove(0, 0);
+            }
 
-            //Run the thread
-            listener.start();
+            OpMove move = mapper.readValue(response, OpMove.class);
+            System.out.println("📩 Received from server: " + response);
+            return move;
 
+        } catch (IOException e) {
+            System.err.println("💥 Communication error: " + e.getMessage());
+            return new OpMove(0, 0);
+        }
+    }
 
+    /** For two-way live modes (optional) */
+    public boolean connect() {
+        try {
+            Socket socket = new Socket("localhost", 3000);
             connected = true;
-            System.out.println("Connected to Server: " + ": " );
+            System.out.println("✅ Connected to Tetris Server.");
+            socket.close();
             return true;
-        } catch (IOException e)
-        {
-            System.err.println("Connection Failed: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Connection failed: " + e.getMessage());
             connected = false;
             return false;
         }
-
     }
 
-    //Send command to server (this time this method will be used by AI)
-    public void sendCommand(String command)
-    {
-        if(connected && writeOut != null)
-        {
-            writeOut.println(command);
-        }
-    }
-
-    //Read only one line from server response
-    public String readResponse()
-    {
-        try
-        {
-            if(connected && readIn != null)
-            {
-                //read one line
-                return readIn.readLine();
-            }
-        } catch (IOException e)
-        {
-            System.err.println("Reading error from server: " + e.getMessage());
-
-        }
-        return null;
-    }
-    public void disconnect()
-    {
-        try
-        {
-            if(socket != null)
-            {
-                socket.close();
-            }
-            connected = false;
-            System.out.println("Disconnected from server.");
-        }catch(IOException e)
-        {
-            System.err.println("Closing error: " + e.getMessage());
-        }
-    }
-
-    /**
-     * This method is collecting actions and board data from server
-     * and reflect to External Player mode
-     * @param msg
-     */
-    public void handle(String msg)
-    {
-        System.out.println("Received msg: " + msg);
-        //If player is found, pass the command (msg) and let player operate
-        //action
-        if(player != null)
-        {
-            player.processServerInput();
-        }
-    }
-
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return connected;
     }
 }
+
 
 
 

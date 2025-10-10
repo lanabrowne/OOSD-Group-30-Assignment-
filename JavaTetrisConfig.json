@@ -1,6 +1,6 @@
 {
   "fieldWidth": 9,
-  "leftPlayer": "HUMAN",
+  "leftPlayer": "EXTERNAL",
   "music": false,
   "sfx": false,
   "fieldHeight": 18,

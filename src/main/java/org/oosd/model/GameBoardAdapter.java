@@ -19,6 +19,9 @@ public class GameBoardAdapter {
         return nextPiece;
     }
 
+    public void setCurrentPiece(Tetromino t) { this.currentPiece = t; }
+    public void setNextPiece(Tetromino t)    { this.nextPiece = t; }
+
     public int[][] getGrid() {
         return board.snapshot();
     }
@@ -67,6 +70,26 @@ public class GameBoardAdapter {
             return gameOver;
         }
         return false;
+    }
+
+    public boolean moveDownOne() {
+        Tetromino cur = getCurrentPiece();
+        if (cur == null) return false;
+
+        Tetromino down = cur.moved(1, 0);
+
+        // 1) 1マスだけ落とす
+        if (board.canPlace(down)) {
+            // ここは「位置の更新」だけにする
+            setCurrentPiece(down);   // ← 無ければ後ろに示すセッターを追加
+            return true;             // まだ落ち続けられる
+        }else {
+            // 2) もう落とせない → ロック & 行消し
+            board.lock(cur);                   // ← Boardに委譲でもOK: board.lock(cur)
+            board.clearFullLines();            // ← Boardに委譲でもOK: board.clearFullLines()
+
+            return false;
+        }
     }
 
     private void spawnNextPiece() {

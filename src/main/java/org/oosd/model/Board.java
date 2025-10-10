@@ -10,6 +10,9 @@ public class Board {
     public final int h; // height 
     private final int[][] grid;
 
+    private Tetromino currentPiece;
+
+
     public Board(int width, int height) {
         this.w = width;
         this.h = height;
@@ -89,7 +92,39 @@ public class Board {
         return snap;
     }
 
+    public void place(Tetromino t) {
+        // validation of setting block
+        if (!canPlace(t)) {
+            System.out.println("Cannot place piece at row=" + t.row + ", col=" + t.col);
+            return;
+        }
+
+        // place the block
+        for (int[] cell : t.cells()) {
+            int row = t.row + cell[1];
+            int col = t.col + cell[0];
+
+            // Check the range
+            if (row >= 0 && row < h && col >= 0 && col < w) {
+                grid[row][col] = t.type.colorId;
+
+            }
+        }
+    }
+
     public int getWidth(){
         return w;
     }
+    public int getHeight(){
+        return h;
+    }
+    public int[][] getGrid() {return grid; }
+
+    public void setCurrentPiece(Tetromino piece) {
+        this.currentPiece = piece;
+    }
+    public Tetromino getCurrentPiece() {
+        return currentPiece;
+    }
+
 }
