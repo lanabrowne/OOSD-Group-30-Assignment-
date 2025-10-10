@@ -5,7 +5,7 @@
   "sfx": true,
   "fieldHeight": 16,
   "gameLevel": 6,
-  "extendMode": true,
+  "extendMode": false,
   "rightPlayer": "HUMAN",
   "aiPlay": false
 }

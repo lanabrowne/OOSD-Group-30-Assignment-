@@ -82,7 +82,7 @@ public class HumanvsHumanInstructions implements Screen {
            this.root = new StackPane(gameRoot, overlay);
 
            // Back button
-           Button backButton = new Button("Back");
+           Button backButton = new Button("End Game");
            backButton.setStyle("-fx-font-size: 16px; -fx-background-color: black;");
            backButton.setOnAction(e ->
                    // Use Frame interface method to navigate back to main screen

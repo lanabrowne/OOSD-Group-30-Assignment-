@@ -82,7 +82,8 @@ public class GameController {
     };
 
     private final AnimationTimer loop = new AnimationTimer() {
-        @Override public void handle(long now) {
+        @Override
+        public void handle(long now) {
             if (paused || gameOver) return;
             if (lastDropNs == 0) lastDropNs = now;
 
@@ -245,7 +246,10 @@ public class GameController {
 
     private boolean tryMove(int dr, int dc) {
         Tetromino moved = current.moved(dr, dc);
-        if (board.canPlace(moved)) { current = moved; return true; }
+        if (board.canPlace(moved)) {
+            current = moved;
+            return true;
+        }
         return false;
     }
 
@@ -253,7 +257,10 @@ public class GameController {
         Tetromino rotated = current.rotated(dir);
         for (int kick : new int[]{0, -1, 1}) {
             Tetromino t = new Tetromino(rotated.type, rotated.rotation, rotated.row, rotated.col + kick);
-            if (board.canPlace(t)) { current = t; return true; }
+            if (board.canPlace(t)) {
+                current = t;
+                return true;
+            }
         }
         return false;
     }
@@ -346,9 +353,11 @@ public class GameController {
         lastDropNs = 0L;
 
         gc.setFont(Font.font(16));
-        gc.fillText("Press any arrow key to start",
+        gc.fillText(
+                "Press any arrow key to start",
                 gameCanvas.getWidth() / 2 - 120,
-                gameCanvas.getHeight() / 2 + 20);
+                gameCanvas.getHeight() / 2 + 20
+        );
     }
 
     // -------------------- end / score --------------------
