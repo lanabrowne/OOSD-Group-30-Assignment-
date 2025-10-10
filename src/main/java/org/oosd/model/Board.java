@@ -1,9 +1,9 @@
 //clears rows and moves the remaining tetromino down :)
 package org.oosd.model;
-import org.oosd.sound.SoundEffects;
+
 
 import java.util.Arrays;
-
+import org.oosd.audio.audioManager;
 
 public class Board {
     public final int w; // width 
@@ -57,6 +57,10 @@ public class Board {
                 row--; // we're rechecking the same row
             }
         }
+  if (cleared > 0) {
+        audioManager.getInstance().playSFX("erase-line");
+    }
+
         return cleared; // Return number of times lines were cleared
     }
 

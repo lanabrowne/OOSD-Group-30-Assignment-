@@ -1,11 +1,11 @@
 {
   "fieldWidth": 9,
-  "leftPlayer": "AI",
+  "leftPlayer": "HUMAN",
   "music": false,
-  "sfx": false,
+  "sfx": true,
   "fieldHeight": 18,
   "gameLevel": 5,
   "extendMode": true,
-  "rightPlayer": "AI",
-  "aiPlay": false
+  "rightPlayer": "HUMAN",
+  "aiPlay": true
 }

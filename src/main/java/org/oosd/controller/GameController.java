@@ -16,9 +16,9 @@ import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
 import org.oosd.external.ExternalPlayer;
 import org.oosd.model.*;
-import org.oosd.sound.SoundEffects;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
+import org.oosd.audio.audioManager;
 
 public class GameController {
 
@@ -136,10 +136,7 @@ public class GameController {
     /**
      * Shows game over overlay
      */
-    private void showGameOver() {
-        loop.stop();
-        SoundEffects.play("gameover");
-    }
+
 
     /**
      * Setup key handlers for user input
@@ -157,14 +154,26 @@ public class GameController {
 
             if (aiPlay) return;
 
-            switch (e.getCode()) {
-                case LEFT -> tryMove(0, -1);
-                case RIGHT -> tryMove(0, 1);
-                case UP -> tryRotate(1);
-                case DOWN -> downPressed = true;
-                case P -> togglePause();
+           switch (e.getCode()) {
+        case LEFT -> {
+            if (tryMove(0, -1)) {
+                audioManager.getInstance().playSFX("move-turn");
             }
-        });
+        }
+        case RIGHT -> {
+            if (tryMove(0, 1)) {
+                audioManager.getInstance().playSFX("move-turn");
+            }
+        }
+        case UP -> {
+            if (tryRotate(1)) {
+                audioManager.getInstance().playSFX("move-turn");
+            }
+        }
+        case DOWN -> downPressed = true;
+        case P -> togglePause();
+    }
+});
 
         gameCanvas.getScene().addEventFilter(KeyEvent.KEY_RELEASED, e -> {
             if (!aiPlay && e.getCode() == KeyCode.DOWN) {
@@ -195,44 +204,47 @@ public class GameController {
      */
     private void lockAndNext() {
         board.lock(current);
-        board.clearFullLines();
+       int linesCleared = board.clearFullLines();
+if (linesCleared > 0) {
+    audioManager.getInstance().playSFX("erase-line");
+}
+
         downPressed = false;
 
         if (!spawnNext()) {
             loop.stop();
             drawGameOver();
+ audioManager.getInstance().playSFX("game-finish"); //sfx
         }
     }
 
     /**
      * Attempts to move current piece
      */
-    private boolean tryMove(int dr, int dc) {
-        Tetromino moved = current.moved(dr, dc);
-        if (board.canPlace(moved)) {
-            current = moved;
+   private boolean tryMove(int dr, int dc) {
+    Tetromino moved = current.moved(dr, dc);
+    if (board.canPlace(moved)) {
+        current = moved;
+        return true;
+    }
+    return false;
+}
+
+private boolean tryRotate(int dir) {
+    Tetromino rotated = current.rotated(dir);
+    for (int kick : new int[] {0, -1, 1}) {
+        Tetromino t = new Tetromino(
+                rotated.type, rotated.rotation,
+                rotated.row, rotated.col + kick
+        );
+        if (board.canPlace(t)) {
+            current = t;
             return true;
         }
-        return false;
     }
+    return false;
+}
 
-    /**
-     * Attempts to rotate current piece
-     */
-    private boolean tryRotate(int dir) {
-        Tetromino rotated = current.rotated(dir);
-        for (int kick : new int[] {0, -1, 1}) {
-            Tetromino t = new Tetromino(
-                    rotated.type, rotated.rotation,
-                    rotated.row, rotated.col + kick
-            );
-            if (board.canPlace(t)) {
-                current = t;
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * Spawns first piece

@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
+import org.oosd.audio.audioManager;
 
 import java.util.Optional;
 
@@ -46,31 +47,33 @@ public class TetrisConfigView {
 
         // --- Checkboxes ---
         CheckBox musicCheckBox = new CheckBox();
-        musicCheckBox.setSelected(config.music());
+        musicCheckBox.setSelected(audioManager.getInstance().isMusicEnabled());
         HBox musicRow = new HBox(10, new Label("Music:"), musicCheckBox);
         musicRow.setAlignment(Pos.CENTER_LEFT);
 
         CheckBox sfxCheckBox = new CheckBox();
-        sfxCheckBox.setSelected(config.sfx());
+        sfxCheckBox.setSelected(audioManager.getInstance().isSfxEnabled());
         HBox sfxRow = new HBox(10, new Label("Sound Effect:"), sfxCheckBox);
         sfxRow.setAlignment(Pos.CENTER_LEFT);
+
+        // Sync checkboxes with a instantly
+        musicCheckBox.setOnAction(e -> audioManager.getInstance().toggleMusic());
+        sfxCheckBox.setOnAction(e -> audioManager.getInstance().toggleSFX());
 
         CheckBox aiCheckBox = new CheckBox();
         aiCheckBox.setSelected(config.aiPlay());
         HBox aiRow = new HBox(10, new Label("AI Play:"), aiCheckBox);
         aiRow.setAlignment(Pos.CENTER_LEFT);
 
-        // --- Extended Mode & Two-Player ---
         CheckBox extendedCheckBox = new CheckBox("Extended Mode");
         extendedCheckBox.setSelected(config.extendMode());
         HBox extendRow = new HBox(10, new Label("Extended Mode:"), extendedCheckBox);
         extendRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Player 1
+        // Player selection
         Label player1Label = new Label("Player One Type:");
         RadioButton player1Human = new RadioButton("Human");
         RadioButton player1AI = new RadioButton("AI");
-        //ADD EXTERNAL
         RadioButton player1External = new RadioButton("External");
 
         ToggleGroup player1Group = new ToggleGroup();
@@ -79,11 +82,9 @@ public class TetrisConfigView {
         player1External.setToggleGroup(player1Group);
         player1Human.setSelected(true);
 
-        // Player 2
         Label player2Label = new Label("Player Two Type:");
         RadioButton player2Human = new RadioButton("Human");
         RadioButton player2AI = new RadioButton("AI");
-        //ADD EXTERNAL
         RadioButton player2External = new RadioButton("External");
 
         ToggleGroup player2Group = new ToggleGroup();
@@ -92,29 +93,18 @@ public class TetrisConfigView {
         player2External.setToggleGroup(player2Group);
         player2Human.setSelected(true);
 
-
-        /**
-         * NEW
-         */
         VBox playerBox = new VBox(5,
                 player1Label, player1Human, player1AI, player1External,
                 player2Label, player2Human, player2AI, player2External
-                );
-        //Just show 2 players selection only when external mode is selected
+        );
         playerBox.setVisible(extendedCheckBox.isSelected());
         playerBox.setManaged(extendedCheckBox.isSelected());
 
-
-
-        //When Extended check box switched off, invisible player selection
         extendedCheckBox.setOnAction(event -> {
             boolean extended = extendedCheckBox.isSelected();
             playerBox.setVisible(extended);
             playerBox.setManaged(extended);
         });
-
-
-
 
         Button backButton = new Button("Back");
         backButton.setPrefWidth(120);
@@ -123,44 +113,25 @@ public class TetrisConfigView {
         Button saveButton = new Button("Save");
         saveButton.setPrefWidth(120);
         saveButton.setOnAction(e -> {
-            //The selection of Player 1 (HUMAN, AI, EXTERNAL)
             PlayerType left;
-            if(player1Human.isSelected())
-            {
+            if (player1Human.isSelected()) {
                 left = PlayerType.HUMAN;
-            }else if(player1AI.isSelected())
-            {
+            } else if (player1AI.isSelected()) {
                 left = PlayerType.AI;
-            }else if(player1External.isSelected())
-            {
+            } else {
                 left = PlayerType.EXTERNAL;
-            }else
-            {
-                //Set HUMAN as default
-                left = PlayerType.HUMAN;
             }
 
-            //Player 2 selection
             PlayerType right;
-            if (!extendedCheckBox.isSelected())
-            {
-                //Actually this line wont be used because external is not selected
-                // --> SOLO PLAY
+            if (!extendedCheckBox.isSelected()) {
                 right = PlayerType.HUMAN;
-            }else {
-                if(player2Human.isSelected())
-                {
+            } else {
+                if (player2Human.isSelected()) {
                     right = PlayerType.HUMAN;
-                }else if(player2AI.isSelected())
-                {
+                } else if (player2AI.isSelected()) {
                     right = PlayerType.AI;
-                }else if(player2External.isSelected())
-                {
+                } else {
                     right = PlayerType.EXTERNAL;
-                }else
-                {
-                    //Set HUMAN as default
-                    right = PlayerType.HUMAN;
                 }
             }
 
@@ -171,7 +142,6 @@ public class TetrisConfigView {
                     musicCheckBox.isSelected(),
                     sfxCheckBox.isSelected(),
                     aiCheckBox.isSelected(),
-                    //NEW Saving left, right side screen users
                     left,
                     right,
                     extendedCheckBox.isSelected()
@@ -183,7 +153,6 @@ public class TetrisConfigView {
         HBox buttonBox = new HBox(10, saveButton, backButton);
         buttonBox.setAlignment(Pos.CENTER);
 
-        // --- Assemble Config Screen ---
         configScreen.getChildren().addAll(
                 title,
                 widthRow,
@@ -200,7 +169,6 @@ public class TetrisConfigView {
         return configScreen;
     }
 
-    // --- Save Notification ---
     public static boolean saveNotification() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Save Notification");
