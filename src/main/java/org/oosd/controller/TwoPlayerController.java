@@ -6,7 +6,6 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -22,9 +21,12 @@ import org.oosd.model.*;
 import org.oosd.ui.Frame;
 import org.oosd.ui.Screen;
 
+<<<<<<< HEAD
 
 import java.util.Optional;
 
+=======
+>>>>>>> 00ac119 (Final commit)
 
 public class TwoPlayerController implements Screen {
 
@@ -38,8 +40,28 @@ public class TwoPlayerController implements Screen {
     private TetrisAI aiLeft;
     private TetrisAI aiRight;
 
+    private volatile boolean connectionLostHandled = false;
+
     private OpMove lastExternalLeftMove = null;
     private OpMove lastExternalRightMove = null;
+
+    private final SharedPieceSequence sharedSequence = new SharedPieceSequence(12345L);
+
+    private PieceGenerator leftGen;
+    private PieceGenerator rightGen;
+
+    private long seed = 1_000_000L;
+
+    private int externalDownSteps = 2;
+
+
+    private boolean leftLandedFlag = false;
+    private boolean rightLandedFlag = false;
+
+    private int leftPieceIndex = 0;
+
+    private int rightPieceIndex = 0;
+
 
 
 
@@ -85,9 +107,9 @@ public class TwoPlayerController implements Screen {
     private void tickLeft() {
         if (aiLeft != null) {
             int[][] snap = boardLeft.snapshot();
-            Move move = aiLeft.findBestMove(snap, boardLeft.h, boardLeft.w, currentPieceLeft, spawnFor(boardLeft));
+            Move move = aiLeft.findBestMove(snap, boardLeft.h, boardLeft.w, currentPieceLeft, peekNext(boardLeft, true));
             executeAIMove(boardLeft, true, move);
-            softDrop(boardLeft, true); // 落とす
+            softDrop(boardLeft, true);
         } else {
             tick(boardLeft, true);
         }
@@ -95,7 +117,7 @@ public class TwoPlayerController implements Screen {
     private void tickRight() {
         if (aiRight != null) {
             int[][] snap = boardRight.snapshot();
-            Move move = aiRight.findBestMove(snap, boardRight.h, boardRight.w, currentPieceRight, spawnFor(boardRight));
+            Move move = aiRight.findBestMove(snap, boardRight.h, boardRight.w, currentPieceRight, peekNext(boardRight, false));
             executeAIMove(boardRight, false, move);
             softDrop(boardRight, false);
         } else {
@@ -124,6 +146,9 @@ public class TwoPlayerController implements Screen {
         // model setup
         boardLeft = new Board(config.fieldWidth(), config.fieldHeight());
         boardRight = new Board(config.fieldWidth(), config.fieldHeight());
+
+        //leftGen = rightGen = new PieceGenerator(System.currentTimeMillis());
+
 
         if (config.leftPlayer() == PlayerType.AI) {
             aiLeft = new TetrisAI();
@@ -216,6 +241,9 @@ public class TwoPlayerController implements Screen {
 
         // start game
 
+        setupConnectionHandlers();
+
+        tuneSpeedByLevel();
         initialSpawnBoth();
         renderBothBoards();
         setupTimer();
@@ -240,15 +268,38 @@ public class TwoPlayerController implements Screen {
 
 
                 if (elapsedLeft >= dropIntervalMs) {
-                    tickLeft();
+                    if (aiLeft != null) {
+                        tickLeft();
+                    } else {
+                        tick(boardLeft, true);
+                    }
                     lastTickLeft = now;
                 }
+
                 if (elapsedRight >= dropIntervalMs) {
-                    tickRight();
+                    if (aiRight != null) {
+                        tickRight();
+                    } else {
+                        tick(boardRight, false);
+                    }
                     lastTickRight = now;
                 }
 
-                renderBothBoards();
+                if (externalLeft != null && externalLeft.pendingMove != null) {
+                    if (!externalLeft.pendingMove.equals(lastExternalLeftMove)) {
+                        applyExternalMove(externalLeft.pendingMove, true);
+                        lastExternalLeftMove = externalLeft.pendingMove;
+                    }
+                    externalLeft.pendingMove = null;
+                }
+                if (externalRight != null && externalRight.pendingMove != null) {
+                    if (!externalRight.pendingMove.equals(lastExternalRightMove)) {
+                        applyExternalMove(externalRight.pendingMove, false);
+                        lastExternalRightMove = externalRight.pendingMove;
+                    }
+                    externalRight.pendingMove = null;
+                }
+
             }
         };
         timer.start();
@@ -264,9 +315,9 @@ public class TwoPlayerController implements Screen {
 
         if (isLeft && aiLeft != null) {
             int[][] snap = boardLeft.snapshot();
-            Move move = aiLeft.findBestMove(snap, boardLeft.h, boardLeft.w, currentPieceLeft, spawnFor(boardLeft));
+            Move move = aiLeft.findBestMove(snap, boardLeft.h, boardLeft.w, currentPieceLeft, spawnFor(boardLeft, true));
             if (move != null) {
-                // move.rotation と move.col を元にピースを動かす
+
                 executeAIMove(boardLeft, true, move);
                 softDrop(boardLeft, true);
             }
@@ -275,57 +326,59 @@ public class TwoPlayerController implements Screen {
         if(!isLeft && aiRight != null)
         {
             int[][] snap = boardRight.snapshot();
-            Move move = aiRight.findBestMove(snap, boardRight.h, boardRight.w, currentPieceRight, spawnFor(boardRight));
+            Move move = aiRight.findBestMove(snap, boardRight.h, boardRight.w, currentPieceRight, spawnFor(boardRight, false));
             if (move != null) {
                 executeAIMove(boardRight, false, move);
                 softDrop(boardRight, false);
             }
         }
 
+
+
         //WHEN Player --> EXTERNAL
-        if(isLeft && externalLeft != null)
-        {
-                externalLeft.updateBoardState(boardLeft, currentPieceLeft, spawnFor(boardLeft));
-            //receive action from server and make action
-                externalLeft.setCurrentPiece(currentPieceLeft);
-                externalLeft.setNextPiece(spawnFor(boardLeft));
-                externalLeft.sendAction();
+//        if(isLeft && externalLeft != null)
+//        {
+//                externalLeft.updateBoardState(boardLeft, currentPieceLeft, spawnFor(boardLeft, true));
+//            //receive action from server and make action
+//                externalLeft.setCurrentPiece(currentPieceLeft);
+//                externalLeft.setNextPiece(spawnFor(boardLeft, true));
+//                externalLeft.sendAction();
+//
+//            // if we got response from server, reflect that
+//            if (externalLeft.pendingMove != null) {
+//                if (!externalLeft.pendingMove.equals(lastExternalLeftMove)) {
+//                    applyExternalMove(externalLeft.pendingMove, true);
+//                    lastExternalLeftMove = externalLeft.pendingMove;
+//                } else {
+//                    System.out.println("Skipping duplicate left move");
+//                }
+//                externalLeft.pendingMove = null;
+//            }
+//
+//            //externalLeft.updateBoardState(boardLeft, currentPieceLeft, null);
+//
+//
+//        }
+//        if(!isLeft && externalRight != null)
+//        {
+//            externalRight.updateBoardState(boardRight, currentPieceRight, spawnFor(boardRight, false));
+//            externalRight.setCurrentPiece(currentPieceRight);
+//            externalRight.setNextPiece(spawnFor(boardRight, false));
+//            externalRight.sendAction();
+//
+//            if (externalRight.pendingMove != null) {
+//                if (!externalRight.pendingMove.equals(lastExternalRightMove)) {
+//                    applyExternalMove(externalRight.pendingMove, false);
+//                    lastExternalRightMove = externalRight.pendingMove;
+//                } else {
+//                    System.out.println("Skipping duplicate right move");
+//                }
+//                externalRight.pendingMove = null;
+//            }
+//            //externalRight.updateBoardState(boardRight, currentPieceRight, null);
 
-            // if we got response from server, reflect that
-            if (externalLeft.pendingMove != null) {
-                if (!externalLeft.pendingMove.equals(lastExternalLeftMove)) {
-                    applyExternalMove(externalLeft.pendingMove, true);
-                    lastExternalLeftMove = externalLeft.pendingMove;
-                } else {
-                    System.out.println("Skipping duplicate left move");
-                }
-                externalLeft.pendingMove = null;
-            }
 
-            //externalLeft.updateBoardState(boardLeft, currentPieceLeft, null);
-
-
-        }
-        if(!isLeft && externalRight != null)
-        {
-            externalRight.updateBoardState(boardRight, currentPieceRight, spawnFor(boardRight));
-            externalRight.setCurrentPiece(currentPieceRight);
-            externalRight.setNextPiece(spawnFor(boardRight));
-            externalRight.sendAction();
-
-            if (externalRight.pendingMove != null) {
-                if (!externalRight.pendingMove.equals(lastExternalRightMove)) {
-                    applyExternalMove(externalRight.pendingMove, false);
-                    lastExternalRightMove = externalRight.pendingMove;
-                } else {
-                    System.out.println("Skipping duplicate right move");
-                }
-                externalRight.pendingMove = null;
-            }
-            //externalRight.updateBoardState(boardRight, currentPieceRight, null);
-
-
-        }
+ //       }
 
 
 
@@ -344,7 +397,7 @@ public class TwoPlayerController implements Screen {
             board.lock(piece);
             int linesCleared = board.clearFullLines();
 
-            if (linesCleared > 0){
+            if (linesCleared > 0) {
                 int points = pointsFor(linesCleared);
 
                 if (isLeft) scoreLeftValue += points;
@@ -353,26 +406,92 @@ public class TwoPlayerController implements Screen {
                 updateScoreLabels();
             }
 
-            // spaw a new piece after locking the previous one
-            piece = spawnFor(board);
+            //spawnNextBoth();
+
+            if (isLeft) {
+                leftLandedFlag = true;
+            } else {
+                rightLandedFlag = true;
+            }
+
+
+
+
+
+
+        // spaw a new piece after locking the previous one
+            piece = spawnFor(board, isLeft);
             if (!board.canPlace(piece)) {
                 // if a new piece cannot be placed, game over and the winner is announced
                 endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
                 return;
             }
+
+
+            notifyExternalOnSpawn(isLeft);
         }
 
-        if (isLeft && externalLeft != null && externalLeft.pendingMove != null) {
-            stepExternal(externalLeft, boardLeft, true);
-        }
-        if (!isLeft && externalRight != null && externalRight.pendingMove != null) {
-            stepExternal(externalRight, boardRight, false);
-        }
+//        if (isLeft && externalLeft != null && externalLeft.pendingMove != null) {
+//            stepExternal(externalLeft, boardLeft, true);
+//        }
+//        if (!isLeft && externalRight != null && externalRight.pendingMove != null) {
+//            stepExternal(externalRight, boardRight, false);
+//        }
 
         if (isLeft) currentPieceLeft = piece;
         else currentPieceRight = piece;
 
         renderBothBoards();
+    }
+
+    private void tickBoth() {
+
+        boolean leftLanded = tickSingle(boardLeft, true);
+        boolean rightLanded = tickSingle(boardRight, false);
+
+
+
+        if (leftLanded) {
+            System.out.println("LEFT landed → next index = " + leftPieceIndex);
+            currentPieceLeft = spawnFor(boardLeft, true);
+            if (!boardLeft.canPlace(currentPieceLeft)) {
+                endGame("Player 2 Wins!");
+                return;
+            }
+        }
+
+        if (rightLanded) {
+            System.out.println("RIGHT landed → next index = " + rightPieceIndex);
+            currentPieceRight = spawnFor(boardRight, false);
+            if (!boardRight.canPlace(currentPieceRight)) {
+                endGame("Player 1 Wins!");
+                return;
+            }
+        }
+
+        renderBothBoards();
+    }
+
+    private boolean tickSingle(Board board, boolean isLeft) {
+        Tetromino piece = isLeft ? currentPieceLeft : currentPieceRight;
+        if (piece == null) return false;
+
+        Tetromino down = piece.moved(1, 0);
+        if (board.canPlace(down)) {
+            if (isLeft) currentPieceLeft = down;
+            else currentPieceRight = down;
+            return false;
+        } else {
+            board.lock(piece);
+            int cleared = board.clearFullLines();
+            if (cleared > 0) {
+                int pts = pointsFor(cleared);
+                if (isLeft) scoreLeftValue += pts;
+                else scoreRightValue += pts;
+                updateScoreLabels();
+            }
+            return true;
+        }
     }
 
     private void stepExternal(ExternalPlayer ext, Board board, boolean isLeft) {
@@ -383,8 +502,6 @@ public class TwoPlayerController implements Screen {
         if (piece == null) return;
 
         System.out.println("[DEBUG] External step: X=" + move.opX() + " rotate=" + move.opRotate());
-
-        // --- 横移動 ---
         if (move.opX() != piece.col) {
             int diff = move.opX() - piece.col;
             int dir = diff > 0 ? 1 : -1;
@@ -394,28 +511,28 @@ public class TwoPlayerController implements Screen {
             }
         }
 
-        // --- 回転処理 ---
+
         for (int i = 0; i < move.opRotate(); i++) {
             Tetromino rotated = piece.rotated(1);
             if (board.canPlace(rotated)) piece = rotated;
         }
 
-        // --- 自然落下（1段 or 全部） ---
+
         Tetromino down = piece.moved(1, 0);
         if (board.canPlace(down)) piece = down;
         else {
             board.lock(piece);
-            piece = spawnFor(board);
+            piece = spawnFor(board, isLeft);
         }
 
-        // ✅ 表示ピース更新（超重要）
+
         if (isLeft) currentPieceLeft = piece;
         else currentPieceRight = piece;
 
-        // ✅ JavaFXスレッドで描画
+
         Platform.runLater(this::renderBothBoards);
 
-        // 受信済みなのでリセット
+
         ext.pendingMove = null;
     }
 
@@ -436,19 +553,79 @@ public class TwoPlayerController implements Screen {
         scoreRight.setText("Score: " + scoreRightValue);
     }
 
+    private void tuneSpeedByLevel() {
+
+        final double BASE = 650;
+        final double STEP = 80;
+        final double MIN  = 80;
+
+        int lv = Math.max(0, config.gameLevel());
+
+
+        dropIntervalMs = Math.max(MIN, BASE - STEP * lv);
+
+        externalDownSteps = Math.min(5, 2 + lv / 2);
+
+        System.out.println("[Speed] level=" + lv +
+                " dropIntervalMs=" + dropIntervalMs +
+                " externalDownSteps=" + externalDownSteps);
+    }
+
     // spawn the initial tetromino piece for both l/r players
     private void initialSpawnBoth(){
-        currentPieceLeft = spawnFor(boardLeft);
-        currentPieceRight = spawnFor(boardRight);
+        TetrominoType firstLeft = sharedSequence.pieceAt(leftPieceIndex++);
+        TetrominoType firstRight = sharedSequence.pieceAt(rightPieceIndex++);
+        currentPieceLeft = new Tetromino(firstLeft, boardLeft.w / 2 - 1, 0, 0);
+        currentPieceRight = new Tetromino(firstRight, boardRight.w / 2 - 1, 0, 0);
+
+        notifyExternalOnSpawn(true);
+        notifyExternalOnSpawn(false);
    }
+
+    private void notifyExternalOnSpawn(boolean isLeft) {
+        if (isLeft && externalLeft != null) {
+            TetrominoType nextType = sharedSequence.pieceAt(leftPieceIndex);
+            Tetromino next = new Tetromino(nextType, 0, 0, 0);
+
+            externalLeft.updateBoardState(boardLeft, currentPieceLeft, next);
+            externalLeft.setCurrentPiece(currentPieceLeft);
+            externalLeft.setNextPiece(next);
+            externalLeft.sendAction();
+        } else if (!isLeft && externalRight != null) {
+            TetrominoType nextType = sharedSequence.pieceAt(rightPieceIndex);
+            Tetromino next = new Tetromino(nextType, 0, 0, 0);
+
+            externalRight.updateBoardState(boardRight, currentPieceRight, next);
+            externalRight.setCurrentPiece(currentPieceRight);
+            externalRight.setNextPiece(next);
+            externalRight.sendAction();
+        }
+    }
+
+   private void spawnNextBoth()
+   {
+       TetrominoType nextType = sharedSequence.nextType();
+       currentPieceLeft = new Tetromino(nextType, boardLeft.w / 2 - 1, 0, 0);
+       currentPieceRight = new Tetromino(nextType, boardRight.w / 2 - 1, 0, 0);
+   }
+
+
+
 
     // create a new random tetromino
     // positioned at the centre of the board
-    private Tetromino spawnFor(Board board){
-        Tetromino t = Tetromino.random(board.w);
-        t.row = 0;
-        t.col = board.w/2-1;
-        return t;
+    private Tetromino spawnFor(Board board, boolean isLeft){
+
+        int index = isLeft ? leftPieceIndex : rightPieceIndex;
+        TetrominoType type = sharedSequence.pieceAt(index);
+
+        if (isLeft) {
+            leftPieceIndex++;
+        } else {
+            rightPieceIndex++;
+        }
+
+        return new Tetromino(type, board.w / 2 - 1, 0, 0);
    }
 
     /*
@@ -546,6 +723,12 @@ public class TwoPlayerController implements Screen {
 
             default -> {}
         }
+    }
+
+    private Tetromino peekNext(Board board, boolean isLeft) {
+        int index = isLeft ? leftPieceIndex : rightPieceIndex;
+        TetrominoType type = sharedSequence.pieceAt(index);
+        return new Tetromino(type, board.w / 2 - 1, 0, 0);
     }
 
     /**
@@ -651,7 +834,7 @@ public class TwoPlayerController implements Screen {
 
             // spawn a new piece after locking the previous one
             // otherwise call end game and announce the winner
-            p = spawnFor(board);
+            p = spawnFor(board, isLeft);
             if (!board.canPlace(p)) {
                 endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
             }
@@ -768,12 +951,20 @@ public class TwoPlayerController implements Screen {
     }
 
     private void showConnectionLostAlert(boolean isLeft) {
+        if (connectionLostHandled) return;
+        connectionLostHandled = true;
+
+        // stop the game first
+        pauseGame();
+        paused = true;
+
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Connection Lost");
-            alert.setHeaderText("⚠️ Connection to server was lost.");
-            alert.setContentText((isLeft ? "Left" : "Right") + " player has lost connection.");
+            alert.setTitle("Server Connection Error");
+            alert.setHeaderText("Server connection was cut");
+            alert.setContentText("Please execute server again");
 
+            alert.showAndWait();
         });
     }
 
@@ -782,39 +973,53 @@ public class TwoPlayerController implements Screen {
      * @return
      */
     public void applyExternalMove(OpMove move, boolean isLeft) {
-        Board targetBoard = isLeft ? boardLeft : boardRight;
-        Tetromino targetPiece = isLeft ? currentPieceLeft : currentPieceRight;
+        Board b = isLeft ? boardLeft : boardRight;
+        Tetromino cur = isLeft ? currentPieceLeft : currentPieceRight;
+        if (b == null || cur == null || move == null) return;
 
-        if (targetBoard == null || targetPiece == null) {
-            System.out.println("⚠️ No board or piece for external move.");
-            return;
+
+        for (int i = 0; i < move.opRotate(); i++) {
+            Tetromino r = cur.rotated(1);
+            if (b.canPlace(r)) cur = r;
         }
 
-        System.out.println("🔄 Applying external move: X=" + move.opX() + ", Rotations=" + move.opRotate());
 
-        // 1️⃣ 回転を適用
-        Tetromino moved = targetPiece;
-        for (int i = 0; i < move.opRotate(); i++) {
-            Tetromino rotated = moved.rotated(1);
-            if (targetBoard.canPlace(rotated)) {
-                moved = rotated;
+        int targetCol = Math.max(0, Math.min(move.opX(), b.w - cur.spawnWidth()));
+        while (cur.col < targetCol && b.canPlace(cur.moved(0, 1)))  cur = cur.moved(0, 1);
+        while (cur.col > targetCol && b.canPlace(cur.moved(0, -1))) cur = cur.moved(0, -1);
+
+
+        boolean landed = false;
+        for (int i = 0; i < externalDownSteps; i++) {
+            Tetromino down = cur.moved(1, 0);
+            if (b.canPlace(down)) {
+                cur = down;
+            } else {
+                landed = true;
+                break;
             }
         }
 
-        // 2️⃣ 横移動を適用
-        Tetromino shifted = moved.moved(0, move.opX());
-        if (targetBoard.canPlace(shifted)) {
-            moved = shifted;
-        }
+        if (landed) {
+            b.lock(cur);
+            int cleared = b.clearFullLines();
+            if (cleared > 0) {
+                int pts = pointsFor(cleared);
+                if (isLeft) scoreLeftValue += pts; else scoreRightValue += pts;
+                updateScoreLabels();
+            }
+            Tetromino next = spawnFor(b, isLeft);
+            if (!b.canPlace(next)) {
+                endGame(isLeft ? "Player 2 Wins!" : "Player 1 Wins!");
+                return;
+            }
+            if (isLeft) currentPieceLeft = next; else currentPieceRight = next;
 
-        // 3️⃣ ピースを更新（まだ固定しない！）
-        if (isLeft) {
-            currentPieceLeft = moved;
+            notifyExternalOnSpawn(isLeft);
         } else {
-            currentPieceRight = moved;
+            if (isLeft) currentPieceLeft = cur; else currentPieceRight = cur;
         }
 
-        // 4️⃣ 描画更新
         renderBothBoards();
     }
 

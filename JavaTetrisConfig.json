@@ -4,8 +4,13 @@
   "music": false,
   "sfx": true,
   "fieldHeight": 18,
-  "gameLevel": 5,
+  "gameLevel": 2,
   "extendMode": true,
+<<<<<<< HEAD
   "rightPlayer": "HUMAN",
   "aiPlay": true
+=======
+  "rightPlayer": "EXTERNAL",
+  "aiPlay": false
+>>>>>>> 00ac119 (Final commit)
 }

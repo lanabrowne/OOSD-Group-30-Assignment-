@@ -34,24 +34,27 @@ public class ExternalClient {
                         new InputStreamReader(socket.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)
                 )
         ) {
-            // 1) JSONを1行で送る（必ず println）
+
             out.println(jsonGame);
             out.flush();
 
-            // 2) 1行の応答を受け取る
+
             String response = in.readLine();
             if (response == null) {
-                System.err.println("⚠️ Server returned null response. Using default move.");
+                System.err.println("Server returned null response. Using default move.");
                 return new OpMove(0, 0);
             }
 
             OpMove move = mapper.readValue(response, OpMove.class);
-            System.out.println("📩 Received from server: " + response);
+            System.out.println("Received from server: " + response);
             return move;
 
         } catch (IOException e) {
-            System.err.println("💥 Communication error: " + e.getMessage());
-            return new OpMove(0, 0);
+            System.out.println("Communication error: " + e.getMessage());
+            if (player != null) {
+                player.notifyConnectionLost(e.getMessage());
+            }
+            return null;
         }
     }
 
@@ -60,7 +63,7 @@ public class ExternalClient {
         try {
             Socket socket = new Socket("localhost", 3000);
             connected = true;
-            System.out.println("✅ Connected to Tetris Server.");
+            System.out.println("Connected to Tetris Server.");
             socket.close();
             return true;
         } catch (IOException e) {

@@ -1,7 +1,7 @@
 package org.oosd.model;
 
-public interface PieceGenerator {
+public interface IPieceGenerator {
     TetrominoType nextType();
-    TetrominoType pealType();
+    TetrominoType peekType();
 
 }

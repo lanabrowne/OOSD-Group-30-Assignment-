@@ -32,6 +32,8 @@ public class GameController {
     private Tetromino next;
     private Frame parent;
 
+    private SharedPieceSequence sharedSeq;
+
     private final TetrisAI ai = new TetrisAI();
     private Move currentAiMove = null;
     private boolean aiMoveExecuted = false;

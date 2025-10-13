@@ -2,7 +2,7 @@ package org.oosd.model;
 
 import java.util.*;
 
-public class PierceGenerator implements PieceGenerator {
+public class PieceGenerator implements IPieceGenerator {
     private final Random rng;
     private final Deque<TetrominoType> bag = new ArrayDeque<>();
 
@@ -14,8 +14,11 @@ public class PierceGenerator implements PieceGenerator {
 
     private void refill()
     {
-        List<TetrominoType> list = new ArrayList<>(Arrays.asList(TetrominoType.values()));
-        list.removeIf(t -> t == TetrominoType.NONE);
+        List<TetrominoType> list = Arrays.asList(
+                TetrominoType.I, TetrominoType.J, TetrominoType.L,
+                TetrominoType.O, TetrominoType.S, TetrominoType.T, TetrominoType.Z
+        );
+        list = new ArrayList<>(list);
         Collections.shuffle(list, rng);
         bag.addAll(list);
     }
