@@ -14,6 +14,7 @@ import org.oosd.audio.audioManager;
 import org.oosd.config.ConfigService;
 import org.oosd.ui.*;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class Main extends Application implements Frame {
@@ -76,7 +77,10 @@ public class Main extends Application implements Frame {
         root = new StackPane();
         Scene scene = new Scene(root, fieldWidth, fieldHeight);
         scene.getStylesheets().add(
-                Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
+                Objects.requireNonNull(
+                        Main.class.getResource("/org/oosd/css/styles.css")
+                ).toExternalForm()
+        );
 
         // Music and SFX indicators
         musicIndicator = new Text();

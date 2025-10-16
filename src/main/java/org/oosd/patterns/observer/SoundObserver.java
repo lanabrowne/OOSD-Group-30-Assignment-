@@ -1,6 +1,7 @@
 package org.oosd.patterns.observer;
 
-import org.oosd.sound.SoundEffects;
+//import org.oosd.sound.SoundEffects;
+
 
 public class SoundObserver implements ScoreObserver {
     @Override

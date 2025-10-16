@@ -136,7 +136,7 @@ public class ExternalPlayer {
             OpMove move = client.requestMove(jsonGame);
 
             if (move == null) {
-                System.err.println("⚠️ No move received from server.");
+                System.err.println("No move received from server.");
                 return;
             }
 

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.Socket;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 /**
  * Handles socket communication with the TetrisServer.
@@ -13,6 +15,12 @@ import java.net.Socket;
 public class ExternalClient {
     private ExternalPlayer player;
     private boolean connected = false;
+
+    private Runnable onConnectionError;
+
+    public void setOnConnectionError(Runnable handler) {
+        this.onConnectionError = handler;
+    }
 
     public void setPlayer(ExternalPlayer player) {
         this.player = player;
@@ -66,11 +74,30 @@ public class ExternalClient {
             System.out.println("Connected to Tetris Server.");
             socket.close();
             return true;
-        } catch (IOException e) {
-            System.err.println("Connection failed: " + e.getMessage());
+        } catch (Exception ex) {
+            notifyConnectionError(ex.getMessage());
+            System.err.println("Connection failed: " + ex.getMessage());
             connected = false;
             return false;
         }
+    }
+
+    private void notifyConnectionError(String detailMessage) {
+
+        if (onConnectionError != null) {
+            Platform.runLater(onConnectionError);
+            return;
+        }
+
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Server Connection Error");
+            alert.setHeaderText("Server connection was cut");
+
+            alert.setContentText("Please run the server again ");
+            alert.showAndWait();
+        });
     }
 
     public boolean isConnected() {

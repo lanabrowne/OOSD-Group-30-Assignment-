@@ -1,1 +1,152 @@
-[]
+[
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-AIvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-AIvsHUMAN"
+  },
+  {
+    "score": 400,
+    "name": "AI 2",
+    "config": "9x17-Lv6-AIvsHUMAN"
+  },
+  {
+    "score": 100,
+    "name": "Human2",
+    "config": "9x17-Lv6-AIvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-AIvsAI"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-AIvsAI"
+  },
+  {
+    "score": 200,
+    "name": "Left AI vs AI1",
+    "config": "9x17-Lv6-AIvsAI"
+  },
+  {
+    "score": 200,
+    "name": "Right AI vs AI",
+    "config": "9x17-Lv6-AIvsAI"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "External",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Eternal Right",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-EXTERNALvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-EXTERNALvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "External",
+    "config": "9x17-Lv6-EXTERNALvsHUMAN"
+  },
+  {
+    "score": 100,
+    "name": "Human",
+    "config": "9x17-Lv6-EXTERNALvsHUMAN"
+  },
+  {
+    "score": 200,
+    "name": "AI E",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 100,
+    "name": "External E",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-HUMANvsHUMAN"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Right Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 0,
+    "name": "Left Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  },
+  {
+    "score": 100,
+    "name": "Right Player",
+    "config": "9x17-Lv6-EXTERNALvsEXTERNAL"
+  }
+]

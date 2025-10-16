@@ -147,7 +147,7 @@ public class TetrisConfigView {
                     extendedCheckBox.isSelected()
             );
             ConfigService.update(newConfig);
-            saveNotification();
+
         });
 
         HBox buttonBox = new HBox(10, saveButton, backButton);
