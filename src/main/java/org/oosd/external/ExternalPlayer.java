@@ -12,6 +12,9 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,6 +35,9 @@ public class ExternalPlayer {
     private Thread listeningThread;
 
     private Runnable onConnectionLost;
+
+    private Runnable onReconnected;
+    private ScheduledExecutorService retryExec;
 
     public void setOnConnectionLost(Runnable handler) {
         this.onConnectionLost = handler;
@@ -60,6 +66,8 @@ public class ExternalPlayer {
         this.nextPiece = piece;
     }
 
+    public void setOnReconnected(Runnable handler) { this.onReconnected = handler; }
+
 
     /**
      * This method is connecting to server
@@ -67,6 +75,10 @@ public class ExternalPlayer {
      */
     public boolean connectToServer()
     {
+        boolean ok = client.connect();
+        if (!ok) {
+            notifyConnectionLost("Failed to connect to server");
+        }
         //Set host name and port number to connect to server
         return client.connect();
     }
@@ -110,7 +122,7 @@ public class ExternalPlayer {
     public void sendAction()
     {
         if (client == null || board == null || currentPiece == null) {
-            System.err.println("⚠️ Cannot send action: missing client, board, or current piece.");
+            System.err.println("Cannot send action: missing client, board, or current piece.");
             return;
         }
 
@@ -124,14 +136,14 @@ public class ExternalPlayer {
             OpMove move = client.requestMove(jsonGame);
 
             if (move == null) {
-                System.err.println("⚠️ No move received from server.");
+                System.err.println("No move received from server.");
                 return;
             }
 
-            System.out.println("? Received OpMove: " + move);
+            System.out.println("Received OpMove: " + move);
 
             //Platform.runLater(() -> controller.applyExternalMove(move, isLeft));
-            System.out.println("? Received OpMove: " + move);
+            System.out.println("Received OpMove: " + move);
             Platform.runLater(() -> {
                 try {
                     Thread.sleep(50);
@@ -142,6 +154,7 @@ public class ExternalPlayer {
         }catch (Exception e) {
 
             System.err.println("Connection lost: " + e.getMessage());
+            notifyConnectionLost(e.getMessage());
             if (onConnectionLost != null) onConnectionLost.run();
         }
     }
@@ -171,7 +184,40 @@ public class ExternalPlayer {
         json.append("\"currentShape\":").append(arrayToJson(current.cells())).append(",");
         json.append("\"nextShape\":").append(arrayToJson(next.cells()));
         json.append("}");
-        return json.toString(); // 改行は付けない（printlnが付けてくれる）
+        return json.toString();
+    }
+
+    public void notifyConnectionLost(String reason) {
+        System.err.println("Communication error: " + reason);
+        if (onConnectionLost != null) {
+            Platform.runLater(() -> { if (onConnectionLost != null) onConnectionLost.run(); });
+            startAutoReconnect();
+        }
+    }
+
+    private synchronized void startAutoReconnect() {
+        if (retryExec != null && !retryExec.isShutdown()) return;
+        retryExec = Executors.newSingleThreadScheduledExecutor();
+        retryExec.scheduleAtFixedRate(() -> {
+            try {
+                if (!client.isConnected()) {
+                    boolean ok = client.connect();
+                    if (ok) {
+                        stopAutoReconnect();
+                        Platform.runLater(() -> { if (onReconnected != null) onReconnected.run(); });
+                    }
+                } else {
+                    stopAutoReconnect();
+                }
+            } catch (Exception ignored) {}
+        }, 0, 2, TimeUnit.SECONDS);
+    }
+
+    private synchronized void stopAutoReconnect() {
+        if (retryExec != null) {
+            retryExec.shutdownNow();
+            retryExec = null;
+        }
     }
 
 }

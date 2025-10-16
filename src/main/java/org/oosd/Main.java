@@ -1,16 +1,20 @@
 package org.oosd;
 
-import javafx.animation.AnimationTimer;
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import org.oosd.audio.audioManager;
 import org.oosd.config.ConfigService;
-import org.oosd.config.TetrisConfigView;
 import org.oosd.ui.*;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class Main extends Application implements Frame {
@@ -19,30 +23,27 @@ public class Main extends Application implements Frame {
     private MainScreen mainScreen;
     private static final double fieldWidth = 500;
     private static final double fieldHeight = 750;
-    private AnimationTimer timer;
+
+    private Text musicIndicator;
+    private Text sfxIndicator;
 
     public static void main(String[] args) {
         launch(args);
     }
 
-public void showTwoPlayerAI() {
-    TwoPlayerAIScreen aiScreen = new TwoPlayerAIScreen(this, mainScreen);
-    showScreen(aiScreen);
-}
+    public void showTwoPlayerAI() {
+        TwoPlayerAIScreen aiScreen = new TwoPlayerAIScreen(this, mainScreen);
+        showScreen(aiScreen);
+    }
 
-
-    /**
-     * Build all top-level screens and wire up navigation.
-     */
     private void buildScreens() {
         mainScreen = new MainScreen(this);
 
         ConfigScreen configScreen = new ConfigScreen(
-                () -> showNewGame(),        // single-player callback
-                () -> showTwoPlayerGame(),  // two-player callback
+                () -> showNewGame(),
+                () -> showTwoPlayerGame(),
                 () -> showTwoPlayerAI(),
-                () -> showScreen(mainScreen) // back callback
-                
+                () -> showScreen(mainScreen)
         );
 
         HighScoreScreen highScoreScreen = new HighScoreScreen(this);
@@ -53,19 +54,17 @@ public void showTwoPlayerAI() {
         highScoreScreen.setRoute("back", mainScreen);
 
         showScreen(mainScreen);
+
+        audioManager.getInstance().playMusic();
     }
 
-    /* Start a fresh single-player game. */
     public void showNewGame() {
         GameScreen newGame = new GameScreen(this);
         newGame.setRoute("back", mainScreen);
         showScreen(newGame);
     }
 
-    /* Start a fresh two-player game after overlay is dismissed. */
     public void showTwoPlayerGame() {
-        System.out.println("DEBUG: entering showTwoPlayerGame()");
-        // Show overlay first, then the game starts after key press
         HumanvsHumanInstructions overlayScreen = new HumanvsHumanInstructions(this);
         showScreen(overlayScreen);
     }
@@ -78,14 +77,52 @@ public void showTwoPlayerAI() {
         root = new StackPane();
         Scene scene = new Scene(root, fieldWidth, fieldHeight);
         scene.getStylesheets().add(
-                Main.class.getResource("/org.oosd/css/styles.css").toExternalForm());
+                Objects.requireNonNull(
+                        Main.class.getResource("/org/oosd/css/styles.css")
+                ).toExternalForm()
+        );
+
+        // Music and SFX indicators
+        musicIndicator = new Text();
+        musicIndicator.setFill(Color.WHITE);
+        musicIndicator.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        sfxIndicator = new Text();
+        sfxIndicator.setFill(Color.WHITE);
+        sfxIndicator.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        // Position them
+        musicIndicator.setTranslateX(10);
+        musicIndicator.setTranslateY(10);
+
+        sfxIndicator.setTranslateX(10);
+        sfxIndicator.setTranslateY(30);
+
+        root.getChildren().addAll(musicIndicator, sfxIndicator);
+
+        updateAudioIndicators();
+
+        // Key listener for M/S toggles
+        scene.setOnKeyPressed(event -> {
+            switch (event.getCode()) {
+                case M -> {
+                    audioManager.getInstance().toggleMusic();
+                    showToggleMessage("Music: " + (audioManager.getInstance().isMusicEnabled() ? "ON" : "OFF"));
+                    updateAudioIndicators();
+                }
+                case S -> {
+                    audioManager.getInstance().toggleSFX();
+                    showToggleMessage("SFX: " + (audioManager.getInstance().isSfxEnabled() ? "ON" : "OFF"));
+                    updateAudioIndicators();
+                }
+            }
+        });
 
         primaryStage.setTitle("Tetris");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
 
-        // Splash first, then menu/config
         SplashScreen.show(primaryStage, this::buildScreens, fieldWidth, fieldHeight);
 
         primaryStage.setOnCloseRequest(event -> {
@@ -111,6 +148,7 @@ public void showTwoPlayerAI() {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == yesButton) {
+            audioManager.getInstance().stopMusic();
             System.exit(0);
         }
     }
@@ -119,5 +157,30 @@ public void showTwoPlayerAI() {
     public MainScreen getMainScreen() {
         return mainScreen;
     }
+
+    private void showToggleMessage(String message) {
+        Text text = new Text(message);
+        text.setFill(Color.WHITE);
+        text.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        root.getChildren().add(text);
+
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
+        delay.setOnFinished(event -> root.getChildren().remove(text));
+        delay.play();
+    }
+
+ private void updateAudioIndicators() {
+    // Update indicator text
+    musicIndicator.setText("🎵 " + (audioManager.getInstance().isMusicEnabled() ? "ON" : "OFF"));
+    sfxIndicator.setText("🔊 " + (audioManager.getInstance().isSfxEnabled() ? "ON" : "OFF"));
+
+    // Position them above the game board
+    musicIndicator.setTranslateX(10);   // margin from left
+    musicIndicator.setTranslateY(-fieldHeight / 2 + 30); // top of game board
+
+    sfxIndicator.setTranslateX(10);
+    sfxIndicator.setTranslateY(-fieldHeight / 2 + 60); // just below music indicator
 }
 
+
+}

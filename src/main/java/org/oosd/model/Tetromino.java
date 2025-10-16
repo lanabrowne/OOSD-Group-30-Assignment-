@@ -158,12 +158,20 @@ public class Tetromino extends AbstractPiece{
         return getMaxRow() - getMinRow() + 1;
     }
 
-    // ---- Correct random method ----
+
     public static Tetromino random(int boardWidth) {
         TetrominoType randomType = TYPES[rand.nextInt(TYPES.length)];
         int startCol = boardWidth / 2 - 1; // center start
         return new Tetromino(randomType, 0, 0, startCol);
     }
+
+    public static Tetromino spawnAtCenter(TetrominoType type, int boardW)
+    {
+        Tetromino t = new Tetromino(type, 0, 0, boardW / 2 -1);
+        return t;
+
+    }
+
 
 
     // Added method to copy Tetromino

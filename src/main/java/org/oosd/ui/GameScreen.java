@@ -38,6 +38,8 @@ public class GameScreen implements ScreenWithGame{
 
             initializeGameController(controller);
 
+
+
 //            // Wire back button navigation
 //            controller.getBtnBack().setOnAction(e -> {
 //                if (mainScreen != null) {

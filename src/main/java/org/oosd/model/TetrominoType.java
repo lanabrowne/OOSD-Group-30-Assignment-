@@ -20,7 +20,7 @@ public enum TetrominoType{
     S(4, 4, new TetrominoSpec(TetrominoShapes.SHAPES_S)),
     Z(5, 5, new TetrominoSpec(TetrominoShapes.SHAPES_Z)),
     J(6, 6, new TetrominoSpec(TetrominoShapes.SHAPES_J)),
- L(7, 7, new TetrominoSpec(TetrominoShapes.SHAPES_L));
+    L(7, 7, new TetrominoSpec(TetrominoShapes.SHAPES_L));
 
     public final int id;
     public final int colorId;

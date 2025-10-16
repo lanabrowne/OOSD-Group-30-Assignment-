@@ -82,15 +82,23 @@ public class HumanvsHumanInstructions implements Screen {
            this.root = new StackPane(gameRoot, overlay);
 
            // Back button
-           Button backButton = new Button("Back");
+           Button backButton = new Button("End Game");
            backButton.setStyle("-fx-font-size: 16px; -fx-background-color: black;");
-           backButton.setOnAction(e ->
-                   // Use Frame interface method to navigate back to main screen
-                   frame.showScreen(frame.getMainScreen()));
+           backButton.setOnAction(e -> {
+               try {
+
+
+                   game.endAndPromptNames();
+
+               } catch (Exception ex) {
+                   System.out.println("End Game button clicked, fallback to main menu.");
+                   frame.showScreen(frame.getMainScreen());
+               }
+           });
+
            StackPane.setAlignment(backButton, Pos.BOTTOM_CENTER);
            StackPane.setMargin(backButton, new Insets(0, 0, 20, 0));
            this.root.getChildren().add(backButton);
-
            this.root.setFocusTraversable(true);
 
            this.root.sceneProperty().addListener((obs, oldScene, scene) -> {
