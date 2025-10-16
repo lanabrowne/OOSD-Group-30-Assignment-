@@ -1,16 +1,11 @@
 {
   "fieldWidth": 9,
-  "leftPlayer": "HUMAN",
-  "music": false,
+  "leftPlayer": "EXTERNAL",
+  "music": true,
   "sfx": true,
-  "fieldHeight": 18,
-  "gameLevel": 2,
+  "fieldHeight": 17,
+  "gameLevel": 6,
   "extendMode": true,
-<<<<<<< HEAD
-  "rightPlayer": "HUMAN",
-  "aiPlay": true
-=======
   "rightPlayer": "EXTERNAL",
   "aiPlay": false
->>>>>>> 00ac119 (Final commit)
 }

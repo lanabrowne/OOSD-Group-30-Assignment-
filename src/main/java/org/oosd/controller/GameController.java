@@ -4,13 +4,20 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import org.oosd.HighScore.ConfigTagUtil;
+import org.oosd.HighScore.HighScoreWriter;
 import org.oosd.Main;
 import org.oosd.config.ConfigService;
 import org.oosd.config.TetrisConfig;
@@ -18,13 +25,21 @@ import org.oosd.external.ExternalPlayer;
 import org.oosd.model.*;
 import org.oosd.ui.Frame;
 import org.oosd.ui.HighScoreScreen;
+
 import org.oosd.audio.audioManager;
+
+import org.oosd.patterns.ConfigManager;
+import org.oosd.patterns.PieceFactory;
+import org.oosd.patterns.RandomPieceFactory;
+
+import java.util.Optional;
 
 public class GameController {
 
     @FXML private Canvas gameCanvas;
-    @FXML private VBox frameCanvas;
-    @FXML private javafx.scene.control.Button end;  // Button after game ends that goes to the highscore screen
+    @FXML private VBox frameCanvas; // VBox that also contains score label / buttons
+    @FXML private javafx.scene.control.Button end;
+    @FXML private Label lblScore;
 
     private Board board;
     private double cellSize;
@@ -39,35 +54,26 @@ public class GameController {
     private boolean aiMoveExecuted = false;
 
     private long lastDropNs = 0;
+    private int score = 0;
 
     private ExternalPlayer externalClient;
 
-    /**
-     * This is the number of hiding lines for the spawn. So that
-     * when drawing the UI, make up 4 lines.
-     */
-    private static final int HIDDEN_ROWS = 4;
+    private boolean scoreSaved = false;
+    private boolean gameOver = false;
+    private boolean nameDialogShowing = false;
 
-    /**
-     * This is definition of free fall speed standard interval.
-     * When user presses down key, make this interval 1/2
-     */
+    private static final int HIDDEN_ROWS = 4;
     private long baseGravMs = 500;
 
-    /**
-     * This is the action of user input of down key.
-     * To switch the interval, set false as default, and when user pressed down key, it will be true.
-     */
     private boolean downPressed = false;
     private boolean paused = false;
     private boolean aiPlay = false;
 
     private GraphicsContext gc;
 
-    /**
-     * Palette of colors for tetromino IDs.
-     * Index 0 is empty (no block)
-     */
+    // Piece factory (Strategy/Factory) to decouple random piece creation
+    private final PieceFactory pieceFactory = new RandomPieceFactory();
+
     private static final Color[] PALETTE = {
             Color.TRANSPARENT, // 0
             Color.CYAN,        // 1 - I
@@ -79,20 +85,14 @@ public class GameController {
             Color.RED          // 7 - Z
     };
 
-    /**
-     * Main game loop
-     */
     private final AnimationTimer loop = new AnimationTimer() {
         @Override
         public void handle(long now) {
-            if (paused) return;
-
+            if (paused || gameOver) return;
             if (lastDropNs == 0) lastDropNs = now;
 
             if (aiPlay && currentAiMove != null && !aiMoveExecuted) {
                 executeAIMove(currentAiMove);
-                System.out.println("AI move: col = " + currentAiMove.col +
-                        ", rotation = " + currentAiMove.rotation);
                 aiMoveExecuted = true;
             }
 
@@ -102,59 +102,112 @@ public class GameController {
             if (elapsedMs >= interval) {
                 stepGravity();
                 lastDropNs = now;
+                if (gameOver) return;
             }
-
             render();
         }
     };
 
     @FXML
     public void initialize() {
-        TetrisConfig config = ConfigService.get();
-        int blockSize = 30; // Pixels per block
-        this.board = new Board(config.fieldWidth(), config.fieldHeight());
-        System.out.println("Board Width = "+ board.w);
+        ConfigService.load();
+        TetrisConfig config = ConfigManager.getInstance().get();
+        this.board = new Board(config.fieldWidth(), config.fieldHeight() + HIDDEN_ROWS);
         this.aiPlay = config.aiPlay();
+        this.gc = gameCanvas.getGraphicsContext2D();
 
-        // Resize canvas to match board
-        gameCanvas.setWidth(config.fieldWidth() * blockSize);
-        gameCanvas.setHeight(config.fieldHeight() * blockSize);
-        gc = gameCanvas.getGraphicsContext2D();
+        // Prevent VBox from force-growing canvas vertically
+        VBox.setVgrow(gameCanvas, Priority.NEVER);
 
+
+        // Defer until Scene/layout are alive
         Platform.runLater(() -> {
-            calculateCellSize();
+            fitCanvasToContainer();               // initial fit
+            attachResizeListeners();              // keep fitting on resize
             drawInitialScreen();
-            setupKeyHandlers();
+            setupKeyHandlers();                   // safe: Scene exists now
+            gameCanvas.setFocusTraversable(true);
+            gameCanvas.requestFocus();
         });
+
     }
 
-    private void calculateCellSize() {
-        cellSize = Math.min(
-                gameCanvas.getWidth() / board.w,
-                gameCanvas.getHeight() / board.h
-        );
+    // -------------------- auto-fit sizing --------------------
+
+    /** Listen to parent size changes and refit canvas. */
+    private void attachResizeListeners() {
+        if (frameCanvas != null) {
+            frameCanvas.widthProperty().addListener((o, ov, nv) -> fitCanvasToContainer());
+            frameCanvas.heightProperty().addListener((o, ov, nv) -> fitCanvasToContainer());
+        }
     }
 
     /**
-     * Shows game over overlay
+     * Fit canvas into the remaining space of the VBox, **excluding** the height of
+     * other children (score label, buttons) and VBox spacing/padding.
      */
 
 
-    /**
-     * Setup key handlers for user input
-     */
+
+    private void fitCanvasToContainer() {
+        int visibleH = board.h - HIDDEN_ROWS;
+
+        double availW = 0, availH = 0;
+
+        if (frameCanvas != null && frameCanvas.getWidth() > 0 && frameCanvas.getHeight() > 0) {
+            Insets in = frameCanvas.getInsets() == null ? Insets.EMPTY : frameCanvas.getInsets();
+            double spacing = frameCanvas.getSpacing();
+            int childCount = frameCanvas.getChildren().size();
+
+            // Sum heights of non-canvas children currently laid out
+            double reservedH = in.getTop() + in.getBottom();
+            int gaps = Math.max(0, childCount - 1);
+            reservedH += spacing * gaps;
+
+            for (Node n : frameCanvas.getChildren()) {
+                if (n == gameCanvas) continue;
+                double h = n.getBoundsInParent().getHeight();
+                if (h <= 0) {
+                    // fallback to preferred height if bounds not realized yet
+                    h = n.prefHeight(-1);
+                }
+                if (h > 0) reservedH += h;
+            }
+
+            availW = Math.max(1, frameCanvas.getWidth() - in.getLeft() - in.getRight());
+            availH = Math.max(1, frameCanvas.getHeight() - reservedH);
+        } else {
+            // First pulse (before layout). Provide a sane fallback.
+            availW = Math.max(1, gameCanvas.getWidth());
+            availH = Math.max(1, gameCanvas.getHeight());
+        }
+
+        // Choose integer cell size to avoid blurry lines
+        double s = Math.min(Math.floor(availW / board.w), Math.floor(availH / visibleH));
+        if (s < 1) s = 1;
+        cellSize = s;
+
+        // Apply exact pixel size so grid lines are crisp
+        gameCanvas.setWidth(board.w * cellSize);
+        gameCanvas.setHeight(visibleH * cellSize);
+    }
+
+
+    // -------------------- input --------------------
+
     private void setupKeyHandlers() {
-        gameCanvas.setFocusTraversable(true);
-        gameCanvas.requestFocus();
-
+        if (gameCanvas.getScene() == null) {
+            Platform.runLater(this::setupKeyHandlers);
+            return;
+        }
         gameCanvas.getScene().addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             if (current == null) {
                 startGame();
                 e.consume();
                 return;
             }
-
             if (aiPlay) return;
+
 
            switch (e.getCode()) {
         case LEFT -> {
@@ -177,46 +230,57 @@ public class GameController {
     }
 });
 
+//            KeyCode code = e.getCode();
+//            if (code == KeyCode.LEFT)  tryMove(0, -1);
+//            if (code == KeyCode.RIGHT) tryMove(0,  1);
+//            if (code == KeyCode.UP)    tryRotate(1);
+//            if (code == KeyCode.DOWN)  downPressed = true;
+//            if (code == KeyCode.P)     togglePause();
+//        });
+
         gameCanvas.getScene().addEventFilter(KeyEvent.KEY_RELEASED, e -> {
-            if (!aiPlay && e.getCode() == KeyCode.DOWN) {
-                downPressed = false;
-            }
+            if (!aiPlay && e.getCode() == KeyCode.DOWN) downPressed = false;
         });
     }
 
-    /**
-     * Start a new game
-     */
+    // -------------------- gameplay --------------------
+
     public void startGame() {
+        gameOver = false;
+        scoreSaved = false;
+        nameDialogShowing = false;
+        downPressed = false;
+        score = 0;
+        updateScoreLabel();
+
+        board = new Board(board.w, board.h);
         current = null;
         next = null;
+
+        // Re-fit once again in case layout changed
+        fitCanvasToContainer();
+
         spawnFirst();
         loop.start();
     }
 
-    /**
-     * Moves current piece down by one. Locks if cannot move further
-     */
     private void stepGravity() {
         if (!tryMove(1, 0)) lockAndNext();
     }
 
-    /**
-     * Locks current piece and spawns next
-     */
     private void lockAndNext() {
         board.lock(current);
-       int linesCleared = board.clearFullLines();
-if (linesCleared > 0) {
-    audioManager.getInstance().playSFX("erase-line");
-}
-
+        int linesCleared = board.clearFullLines();
+        if (linesCleared > 0) {
+            audioManager.getInstance().playSFX("erase-line");
+        }
         downPressed = false;
-
         if (!spawnNext()) {
             loop.stop();
             drawGameOver();
- audioManager.getInstance().playSFX("game-finish"); //sfx
+            audioManager.getInstance().playSFX("game-finish"); //sfx
+            endGame();
+            gameOver = true;
         }
     }
 
@@ -248,112 +312,80 @@ private boolean tryRotate(int dir) {
 }
 
 
-    /**
-     * Spawns first piece
-     */
     private void spawnFirst() {
         next = randomTetromino();
         spawnNext();
     }
 
-    /**
-     * Spawns the next piece and optionally chooses AI move
-     */
     private boolean spawnNext() {
         current = next;
         next = randomTetromino();
         current.row = 0;
-        current.col = (board.w - current.spawnWidth()) / 2; // Center spawn
-
+        current.col = (board.w - current.spawnWidth()) / 2;
         if (!board.canPlace(current)) return false;
 
         if (aiPlay) {
             int[][] snap = board.snapshot();
             currentAiMove = ai.findBestMove(snap, board.h, board.w, current, next);
             aiMoveExecuted = false;
-
-            if (currentAiMove != null) {
-                System.out.println("AI move: col = " + currentAiMove.col +
-                        ", rotation = " + currentAiMove.rotation);
-            }
         }
         return true;
     }
 
-    /**
-     * Returns a random tetromino
-     */
     private Tetromino randomTetromino() {
-        TetrominoType[] types = TetrominoType.values();
-        TetrominoType randomType = types[(int) (Math.random() * types.length)];
-        return new Tetromino(randomType, 0, 0, 0);
+        return pieceFactory.createRandom(board.w);
     }
 
-    /**
-     * Executes AI move for current piece
-     */
     private void executeAIMove(Move move) {
         if (move == null) return;
-
-        // Rotate piece
         int rotations = (move.rotation - current.rotation + 4) % 4;
-        for (int i = 0; i < rotations; i++) {
-            tryRotate(1);
-            System.out.println("Rotated: current.rotation = " + current.rotation + ", col = " + current.col);
-        }
+        for (int i = 0; i < rotations; i++) tryRotate(1);
 
-        // Move piece horizontally
         int targetCol = Math.max(0, Math.min(move.col, board.w - current.spawnWidth()));
-        while (current.col < targetCol) {
-            if (!tryMove(0, 1)) break;
-            System.out.println("Moved right: current.col = " + current.col);
-        }
-        while (current.col > targetCol) {
-            if (!tryMove(0, -1)) break;
-            System.out.println("Moved left: current.col = " + current.col);
-        }
-
-        System.out.println("Final AI position: col = " + current.col + ", rotation = " + current.rotation);
+        while (current.col < targetCol && tryMove(0, 1)) {}
+        while (current.col > targetCol && tryMove(0, -1)) {}
     }
 
-    /**
-     * Renders board and current piece
-     */
+    // -------------------- rendering --------------------
+
     private void render() {
         gc.clearRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-        // Background
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
-        // Draw board
         int[][] snap = board.snapshot();
-        for (int r = 0; r < board.h; r++) {
+        int visibleH = board.h - HIDDEN_ROWS;
+
+        // locked cells
+        for (int r = HIDDEN_ROWS; r < board.h; r++) {
             for (int c = 0; c < board.w; c++) {
-                if (snap[r][c] != 0) {
-                    gc.setFill(PALETTE[snap[r][c]]);
-                    gc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                int id = snap[r][c];
+                if (id != 0) {
+                    gc.setFill(PALETTE[id]);
+                    gc.fillRect(c * cellSize, (r - HIDDEN_ROWS) * cellSize, cellSize, cellSize);
                 }
             }
         }
 
-        // Draw current piece
-        gc.setFill(PALETTE[current.type.colorId]);
-        for (int[] cell : current.cells()) {
-            int r = current.row + cell[1];
-            int c = current.col + cell[0];
-            gc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        // current piece
+        if (current != null) {
+            gc.setFill(PALETTE[current.type.colorId]);
+            for (int[] cell : current.cells()) {
+                int r = current.row + cell[1];
+                int c = current.col + cell[0];
+                if (r >= HIDDEN_ROWS) {
+                    gc.fillRect(c * cellSize, (r - HIDDEN_ROWS) * cellSize, cellSize, cellSize);
+                }
+            }
         }
 
-        // Draw grid
+        // grid
         gc.setStroke(Color.web("#222"));
-        for (int x = 0; x <= board.w; x++) gc.strokeLine(x * cellSize, 0, x * cellSize, gameCanvas.getHeight());
-        for (int y = 0; y <= board.h; y++) gc.strokeLine(0, y * cellSize, board.w * cellSize, y * cellSize);
+        for (int x = 0; x <= board.w; x++) gc.strokeLine(x * cellSize, 0, x * cellSize, visibleH * cellSize);
+        for (int y = 0; y <= visibleH; y++) gc.strokeLine(0, y * cellSize, board.w * cellSize, y * cellSize);
     }
 
-    /**
-     * Draws initial start screen
-     */
     private void drawInitialScreen() {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
@@ -362,149 +394,118 @@ private boolean tryRotate(int dir) {
         gc.setFont(Font.font(28));
         gc.fillText("TETRIS", gameCanvas.getWidth() / 2 - 60, gameCanvas.getHeight() / 2 - 20);
 
-        // Reset board state
         current = null;
         next = null;
         downPressed = false;
         lastDropNs = 0L;
 
         gc.setFont(Font.font(16));
-        gc.fillText("Press any arrow key to start", gameCanvas.getWidth() / 2 - 100,
-                gameCanvas.getHeight() / 2 + 20);
+        gc.fillText(
+                "Press any arrow key to start",
+                gameCanvas.getWidth() / 2 - 120,
+                gameCanvas.getHeight() / 2 + 20
+        );
     }
 
-    /**
-     * @FXML
-     *     public void initialize() {
-     *         gc = gameCanvas.getGraphicsContext2D();
-     *         // Added cell size var to be easily accessed
-     *         int cellSize = 30;
-     *         // change the gamecanvas based on config screen settings
-     *         gameCanvas.setWidth(config.fieldWidth()*cellSize);
-     *         gameCanvas.setHeight((config.fieldHeight()- hiddenRows)*cellSize);
-     *
-     *         drawInitialScreen();
-     *
-     *         soundEffects.init(sfxON);
-     *
-     *         if (musicON) {
-     *             music.play("/background.mp3");
-     *         }
-     *
-     *
-     *
-     *         // Set canvas to focusable and request focus
-     *         gameCanvas.setFocusTraversable(true);
-     *         Platform.runLater(() -> gameCanvas.requestFocus());
-     *
-     *         // Key event handling
-     *         gameCanvas.sceneProperty().addListener((obs, oldSc, sc) -> {
-     *             if (sc == null) return;
-     *
-     *             // Key pressed
-     *             sc.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-     *                 if(current == null){
-     *                     startGame();
-     *                     return;
-     *                 }
-     *                 switch (e.getCode()) {
-     *                     case LEFT   -> processCommand("LEFT");
-     *                     case RIGHT  -> processCommand("RIGHT");
-     *                     case UP     -> processCommand("ROTATE");
-     *                     case DOWN   -> processCommand("DOWN");
-     *                     case P      -> processCommand("PAUSE");
-     *                 }
-     *             });
-     *
-     *             // Key released
-     *             sc.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
-     *                 if (e.getCode() == KeyCode.DOWN) {
-     *                     downPressed = false;
-     *                 }
-     *             });
-     *         });
-     *
-     *     }
-     */
+    // -------------------- end / score --------------------
 
-
-    //Create command action method to pass the command to external
-    public void processCommand(String command)
-    {
-        switch (command) {
-            case "LEFT" -> {
-                if (tryMove(0, -1)) render();
-            }
-            case "RIGHT" -> {
-                if (tryMove(0, 1)) render();
-            }
-            case "ROTATE" -> {
-                if (tryRotate(1)) render();
-            }
-            case "DOWN" -> downPressed = true;
-            case "PAUSE" -> togglePause();
-        }
-    }
-
-
-    // Class-level paused flag
-// Class-level paused flag
-
-
-
-
-
-
-
-    public void resetGame() {
-        // Stop current game loop
+    private void endGame() {
+        if (gameOver) return;
+        gameOver = true;
         loop.stop();
 
-        // Reset board
-        current = null;
-        next = null;
-        downPressed = false;
-        lastDropNs = 0L;
+        drawGameOver();
 
-        gc.setFont(Font.font(16));
-        gc.fillText("Press any arrow key to start", gameCanvas.getWidth() / 2 - 100,
-                gameCanvas.getHeight() / 2 + 20);
+        if (scoreSaved || nameDialogShowing) return;
+        nameDialogShowing = true;
+
+        final int finalScore = score;
+        final String defaultName = "Player";
+
+        Platform.runLater(() -> {
+            TextInputDialog d = new TextInputDialog(defaultName);
+            d.setTitle("High Score");
+            d.setHeaderText("Enter your name");
+            d.setContentText("Name:");
+            d.setOnHidden(e -> {
+                String name = d.getResult();
+                if (name == null || name.trim().isEmpty()) name = defaultName;
+                saveHighScore(finalScore, name);
+                scoreSaved = true;
+                nameDialogShowing = false;
+            });
+            d.show();
+        });
+        HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
+        parent.showScreen(highScoreScreen);
     }
 
-    /**
-     * Draws game over overlay
-     */
     private void drawGameOver() {
         gc.setFill(Color.rgb(0, 0, 0, 0.7));
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
 
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font(36));
-        gc.fillText("GAME OVER", gameCanvas.getWidth() / 2 - 100, gameCanvas.getHeight() / 2);
+        gc.fillText("GAME OVER", gameCanvas.getWidth() / 2 - 110, gameCanvas.getHeight() / 2);
     }
 
-    /**
-     * Toggle pause state
-     */
-    private void togglePause() {
-        paused = !paused;
-    }
+    private void togglePause() { paused = !paused; }
 
-    /**
-     * Handle end button click
-     */
     public void endClicked(ActionEvent e) {
         loop.stop();
-        HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
-        parent.showScreen(highScoreScreen);
+        endGame();
+//        HighScoreScreen highScoreScreen = new HighScoreScreen((Main) parent);
+//        parent.showScreen(highScoreScreen);
     }
 
-    // Getters for AI
-    public int getBoardWidth() { return board.w; }
-    public int getBoardHeight() { return board.h; }
-    public Board getBoard() { return board; }
+    // -------------------- score utils --------------------
 
-    public void setParent(Frame parent) {
-        this.parent = parent;
+    public int getScore() { return score; }
+
+    private void addScore(int linesCleared) {
+        switch (linesCleared) {
+            case 1 -> score += 100;
+            case 2 -> score += 300;
+            case 3 -> score += 500;
+            case 4 -> score += 800;
+        }
+        updateScoreLabel();
+    }
+
+    private void updateScoreLabel() {
+        if (lblScore != null) lblScore.setText("Score: " + score);
+    }
+
+    // -------------------- misc --------------------
+
+    public int getBoardWidth()  { return board.w; }
+    public int getBoardHeight() { return board.h; }
+    public Board getBoard()     { return board; }
+    public void setParent(Frame parent) { this.parent = parent; }
+
+    private void saveHighScore(int finalScore, String playerName) {
+        ConfigService.load();
+        TetrisConfig cfg = ConfigService.get();
+        String configTag = ConfigTagUtil.makeTagFrom(cfg);
+        HighScoreWriter.append(playerName, finalScore, configTag);
+    }
+
+    public void processCommand(String command) {
+        switch (command) {
+            case "LEFT"   -> { if (tryMove(0, -1)) render(); }
+            case "RIGHT"  -> { if (tryMove(0,  1)) render(); }
+            case "ROTATE" -> { if (tryRotate(1))  render(); }
+            case "DOWN"   -> downPressed = true;
+            case "PAUSE"  -> togglePause();
+        }
+    }
+
+    public void resetGame() {
+        loop.stop();
+        current = null;
+        next = null;
+        downPressed = false;
+        lastDropNs = 0L;
+        drawInitialScreen();
     }
 }
